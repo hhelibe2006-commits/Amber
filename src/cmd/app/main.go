@@ -1,9 +1,12 @@
 package main
 
 import (
+	"fyne.io/fyne/v2/app"
 	"github.com/hhelibe2006-commits/Amber/src/internal/ui"
 )
 
 func main() {
-	ui.App()
+	a := app.New()
+	w := ui.App(a)
+	w.ShowAndRun()
 }
