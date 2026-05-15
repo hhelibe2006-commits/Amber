@@ -2,13 +2,15 @@ package main
 
 import (
 	"fmt"
+
+	"github.com/hhelibe2006-commits/Amber/src/internal/args"
+	"github.com/hhelibe2006-commits/Amber/src/internal/backup"
 )
 
 func main() {
-	cfg, err := Args()
+	cfg, err := args.Args()
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Printf("%+v\n", cfg)
-
+	backup.Backup(cfg)
 }
