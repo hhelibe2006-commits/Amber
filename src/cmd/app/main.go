@@ -1,10 +1,14 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func main() {
-	args, err := Args()
-	if !args {
+	cfg, err := Args()
+	if err != nil {
 		fmt.Println(err)
 	}
+	fmt.Printf("%+v\n", cfg)
+
 }
