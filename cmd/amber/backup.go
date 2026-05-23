@@ -18,7 +18,11 @@ var backupCmd = &cobra.Command{
 	Short: "执行备份",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		typ, _ := cmd.Flags().GetString("type")
-		return backup.Run(typ, input, output)
+		err := backup.Run(typ, input, output)
+		if err != nil {
+			fmt.Println("备份出现错误:", err)
+		}
+		return err
 	},
 }
 
