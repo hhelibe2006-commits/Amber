@@ -1,11 +1,14 @@
 package fastcdc
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"io"
-	"math/rand"
+	"math/rand/v2"
 	"os"
-	"sync"
+	"path/filepath"
+
+	"github.com/hhelibe2006-commits/Amber/internal/storage"
 )
 
 type GearHash struct {
@@ -17,38 +20,55 @@ func (g *GearHash) Next(b byte) {
 	g.l = (g.l << 1) + g.table[b]
 }
 
-func NewGearHash(i int64) *GearHash {
+func NewGearHash() *GearHash {
 	g := new(GearHash)
-	rng := rand.New(rand.NewSource(i))
+	rng := rand.New(rand.NewPCG(0, 0))
 	for i := 0; i < 256; i++ {
 		g.table[i] = rng.Uint64()
 	}
 	return g
 }
 
-func FastCDC(i int64, input string, wg *sync.WaitGroup) {
-	defer wg.Done()
+func FastCDC(chunk *storage.Chunk, fl *storage.File, input string) error {
 	avg := 8 * 1024
 	minByte, maxByte := avg/4, avg*4
-	gearHash := NewGearHash(i)
-	info, _ := os.Stat(input)
-	li := make([]byte, 0, info.Size())
-	file, _ := os.Open(input)
+	l, r := (1<<13)-1, (1<<11)-1
+	gearHash := NewGearHash()
+	info, err := os.Stat(input)
+	if err != nil {
+		return err
+	}
+	fl.Mode = info.Mode()
+	fl.ModeTime = info.ModTime()
+	abs, err := filepath.Abs(input)
+	if err != nil {
+		return err
+	}
+	fl.FilePath = abs
+	file, err := os.Open(input)
+	if err != nil {
+		return err
+	}
 	defer func(file *os.File) {
 		err := file.Close()
 		if err != nil {
 			fmt.Println(err)
 		}
 	}(file)
-	buf := make([]byte, 0, 1024)
-	u := make([]byte, 0, 1024)
+	buf := make([]byte, 1024)
+	u := make([]byte, 0, maxByte)
 	for {
 		n, err := file.Read(buf)
 		if err != nil {
 			if err == io.EOF {
+				hash := sha256.Sum256(u)
+				fl.Hash = append(fl.Hash, hash)
+				if _, ok := chunk.Chunk[hash]; !ok {
+					chunk.Chunk[hash] = u
+				}
 				break
 			}
-			fmt.Println(err)
+			return err
 		}
 		for i := 0; i < n; i++ {
 			u = append(u, buf[i])
@@ -56,14 +76,30 @@ func FastCDC(i int64, input string, wg *sync.WaitGroup) {
 			if len(u) < minByte {
 				continue
 			}
-			if gearHash.l&1 == 0 {
-				li = append(li, u...)
-				u = u[:0]
+			var c uint64
+			if len(u) < avg {
+				c = uint64(l)
+			} else {
+				c = uint64(r)
+			}
+			if gearHash.l&c == 0 {
+				hash := sha256.Sum256(u)
+				fl.Hash = append(fl.Hash, hash)
+				if _, ok := chunk.Chunk[hash]; !ok {
+					chunk.Chunk[hash] = u
+				}
+				gearHash.l = 0
 			}
 			if len(u) > maxByte {
-				li = append(li, u...)
-				u = u[:0]
+				hash := sha256.Sum256(u)
+				fl.Hash = append(fl.Hash, hash)
+				if _, ok := chunk.Chunk[hash]; !ok {
+					chunk.Chunk[hash] = u
+				}
+				gearHash.l = 0
 			}
 		}
 	}
+	chunk.FileList = append(chunk.FileList, *fl)
+	return nil
 }
