@@ -12,13 +12,13 @@ import (
 )
 
 func Run(typ string, input cli.Put, output string) error {
-	err := judge(input, output)
-	if err != nil {
-		return err
-	}
 	switch typ {
 	case "file":
-		err := backupFile(input, output)
+		err := judge(input, output)
+		if err != nil {
+			return err
+		}
+		err = backupFile(input, output)
 		if err != nil {
 			return err
 		}
@@ -50,14 +50,14 @@ func backupFile(input cli.Put, output string) error {
 	var wg sync.WaitGroup
 	errCh := make(chan error, len(input))
 	sem := make(chan struct{}, 8)
-	chunk := &storage.Chunk{}
+	chunk := storage.NewChunk()
 	for _, file := range input {
 		wg.Add(1)
 		sem <- struct{}{}
 		go func(p string) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			fl := &storage.File{}
+			fl := storage.NewFile()
 			err := processFile(file, output, chunk, fl)
 			if err != nil {
 				errCh <- err

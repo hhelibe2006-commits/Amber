@@ -1,6 +1,6 @@
 package storage
 
-type ChunkStore map[[32]byte][]byte
+type ChunkStore map[string][]byte
 
 func NewChunkStore() ChunkStore {
 	return make(ChunkStore)

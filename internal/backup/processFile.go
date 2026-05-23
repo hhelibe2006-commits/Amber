@@ -3,6 +3,7 @@ package backup
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -45,25 +46,29 @@ func processFile(input string, output string, chunk *storage.Chunk, fl *storage.
 		if err != nil {
 			return err
 		}
-		if info.IsDir() {
-			return nil
-		}
-		err = fastcdc.FastCDC(chunk, fl, input)
-		if err != nil {
-			return err
-		}
-		defer func(file *os.File) {
-			err := file.Close()
+		if !info.IsDir() {
+			err = fastcdc.FastCDC(chunk, fl, path)
 			if err != nil {
-				return
+				return err
 			}
-		}(file)
-		encoder := json.NewEncoder(file)
-		err = encoder.Encode(chunk)
-		if err != nil {
-			return err
 		}
 		return nil
 	})
+
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			return
+		}
+	}(file)
+	jsonData, err := json.MarshalIndent(chunk, "", "  ")
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	err = os.WriteFile(output, jsonData, 0644)
+	if err != nil {
+		return err
+	}
 	return nil
 }

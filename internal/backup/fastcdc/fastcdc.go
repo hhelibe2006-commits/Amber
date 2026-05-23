@@ -42,7 +42,8 @@ func FastCDC(chunk *storage.Chunk, fl *storage.File, input string) error {
 		n, err := file.Read(buf)
 		if err != nil {
 			if err == io.EOF {
-				hash := sha256.Sum256(u)
+				hash1 := sha256.Sum256(u)
+				hash := string(hash1[:])
 				fl.Hash = append(fl.Hash, hash)
 				if _, ok := chunk.Chunk[hash]; !ok {
 					chunk.Chunk[hash] = u
@@ -64,7 +65,8 @@ func FastCDC(chunk *storage.Chunk, fl *storage.File, input string) error {
 				c = uint64(r)
 			}
 			if gearHash.l&c == 0 {
-				hash := sha256.Sum256(u)
+				hash1 := sha256.Sum256(u)
+				hash := string(hash1[:])
 				fl.Hash = append(fl.Hash, hash)
 				if _, ok := chunk.Chunk[hash]; !ok {
 					chunk.Chunk[hash] = u
@@ -72,7 +74,8 @@ func FastCDC(chunk *storage.Chunk, fl *storage.File, input string) error {
 				gearHash.l = 0
 			}
 			if len(u) > maxByte {
-				hash := sha256.Sum256(u)
+				hash1 := sha256.Sum256(u)
+				hash := string(hash1[:])
 				fl.Hash = append(fl.Hash, hash)
 				if _, ok := chunk.Chunk[hash]; !ok {
 					chunk.Chunk[hash] = u
