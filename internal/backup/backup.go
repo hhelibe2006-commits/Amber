@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/hhelibe2006-commits/Amber/internal/backup/fastcdc"
 	"github.com/hhelibe2006-commits/Amber/internal/cli"
+	"github.com/hhelibe2006-commits/Amber/internal/storage"
 )
 
 func Run(typ string, input cli.Put, output string) error {
@@ -18,7 +18,10 @@ func Run(typ string, input cli.Put, output string) error {
 	}
 	switch typ {
 	case "file":
-		backupFile(input, output)
+		err := backupFile(input, output)
+		if err != nil {
+			return err
+		}
 	case "system":
 		break
 	case "disk":
@@ -43,31 +46,28 @@ func judge(input cli.Put, output string) error {
 	return nil
 }
 
-func backupFile(input cli.Put, output string) {
+func backupFile(input cli.Put, output string) error {
 	var wg sync.WaitGroup
-	for i := 0; i < len(input); i++ {
-		inPath := filepath.Clean(input[i])
-		if info, err := os.Stat(inPath); err != nil {
-			return
-		} else if info.IsDir() {
-			err := filepath.Walk(inPath, func(path string, info os.FileInfo, err error) error {
-				if err != nil {
-					return err
-				}
-				if !info.IsDir() {
-					wg.Add(1)
-					go fastcdc.FastCDC(0, path, &wg)
-				}
-				wg.Wait()
-				return nil
-			})
+	errCh := make(chan error, len(input))
+	sem := make(chan struct{}, 8)
+	chunk := &storage.Chunk{}
+	for _, file := range input {
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(p string) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			fl := &storage.File{}
+			err := processFile(file, output, chunk, fl)
 			if err != nil {
-				return
+				errCh <- err
 			}
-		} else {
-			wg.Add(1)
-			go fastcdc.FastCDC(0, inPath, &wg)
-			wg.Wait()
-		}
+		}(file)
 	}
+	if len(errCh) > 0 {
+		err := <-errCh
+		return err
+	}
+	wg.Wait()
+	return nil
 }
