@@ -3,7 +3,6 @@ package backup
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -61,12 +60,8 @@ func processFile(input string, output string, chunk *storage.Chunk, fl *storage.
 			return
 		}
 	}(file)
-	jsonData, err := json.MarshalIndent(chunk, "", "  ")
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	err = os.WriteFile(output, jsonData, 0644)
+	ender := json.NewEncoder(file)
+	err = ender.Encode(chunk)
 	if err != nil {
 		return err
 	}

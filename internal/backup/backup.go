@@ -48,8 +48,16 @@ func judge(input cli.Put, output string) error {
 
 func backupFile(input cli.Put, output string) error {
 	var wg sync.WaitGroup
+	var size uint64
+	for i := range input {
+		info, err := os.Stat(input[i])
+		if err != nil {
+			return err
+		}
+		size += uint64(info.Size())
+	}
 	errCh := make(chan error, len(input))
-	sem := make(chan struct{}, 8)
+	sem := make(chan struct{}, 30)
 	chunk := storage.NewChunk()
 	for _, file := range input {
 		wg.Add(1)
