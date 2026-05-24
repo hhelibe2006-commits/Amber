@@ -27,6 +27,7 @@ func processFile(input string, output string, chunk *storage.Chunk, fl *storage.
 		}(file)
 		return errors.New("输出路径已经存在")
 	}
+	chunkstore := storage.NewChunkStore()
 	err = filepath.WalkDir(input, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -46,7 +47,7 @@ func processFile(input string, output string, chunk *storage.Chunk, fl *storage.
 			return err
 		}
 		if !info.IsDir() {
-			err = fastcdc.FastCDC(chunk, fl, path)
+			err = fastcdc.FastCDC(chunk, fl, path, chunkstore)
 			if err != nil {
 				return err
 			}

@@ -6,14 +6,12 @@ import (
 )
 
 type Chunk struct {
-	Name     string     `json:"name"`
-	Chunk    ChunkStore `json:"chunk"`
-	FileList []File     `json:"file list"`
+	Name     string `json:"name"`
+	FileList []File `json:"file list"`
 }
 
 func NewChunk() *Chunk {
 	ch := new(Chunk)
-	ch.Chunk = NewChunkStore()
 	ch.FileList = make([]File, 0)
 	return ch
 }

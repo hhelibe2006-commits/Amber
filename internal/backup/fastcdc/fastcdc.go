@@ -10,7 +10,7 @@ import (
 	"github.com/hhelibe2006-commits/Amber/internal/storage"
 )
 
-func FastCDC(chunk *storage.Chunk, fl *storage.File, input string) error {
+func FastCDC(chunk *storage.Chunk, fl *storage.File, input string, chunk2 storage.ChunkStore) error {
 	avg := 8 * 1024
 	minByte, maxByte := avg/4, avg*4
 	l, r := (1<<13)-1, (1<<11)-1
@@ -45,8 +45,8 @@ func FastCDC(chunk *storage.Chunk, fl *storage.File, input string) error {
 				hash1 := sha256.Sum256(u)
 				hash := string(hash1[:])
 				fl.Hash = append(fl.Hash, hash)
-				if _, ok := chunk.Chunk[hash]; !ok {
-					chunk.Chunk[hash] = u
+				if _, ok := chunk2[hash]; !ok {
+					chunk2[hash] = u
 				}
 				break
 			}
@@ -68,8 +68,8 @@ func FastCDC(chunk *storage.Chunk, fl *storage.File, input string) error {
 				hash1 := sha256.Sum256(u)
 				hash := string(hash1[:])
 				fl.Hash = append(fl.Hash, hash)
-				if _, ok := chunk.Chunk[hash]; !ok {
-					chunk.Chunk[hash] = u
+				if _, ok := chunk2[hash]; !ok {
+					chunk2[hash] = u
 				}
 				gearHash.l = 0
 			}
@@ -77,8 +77,8 @@ func FastCDC(chunk *storage.Chunk, fl *storage.File, input string) error {
 				hash1 := sha256.Sum256(u)
 				hash := string(hash1[:])
 				fl.Hash = append(fl.Hash, hash)
-				if _, ok := chunk.Chunk[hash]; !ok {
-					chunk.Chunk[hash] = u
+				if _, ok := chunk2[hash]; !ok {
+					chunk2[hash] = u
 				}
 				gearHash.l = 0
 			}
