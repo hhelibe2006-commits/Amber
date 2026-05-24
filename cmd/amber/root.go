@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var rootCmd = &cobra.Command{
+var rootCmd = &cobra.Command{ //根命令
 	Use:   "amber",
 	Short: "一个系统备份软件",
 	Long:  `Amber 是一个系统备份软件，支持系统备份、文件备份、磁盘备份`,

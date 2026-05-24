@@ -2,6 +2,7 @@ package storage
 
 import (
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -17,14 +18,29 @@ func NewChunk() *Chunk {
 }
 
 type File struct {
-	FilePath string      //文件路径
-	Hash     []string    //文件分块的哈希值
-	ModeTime time.Time   //文件最后修改时间
-	Mode     os.FileMode //文件权限
+	FilePath string            //文件路径
+	Hash     map[uint64]string //文件分块的哈希值
+	ModeTime time.Time         //文件最后修改时间
+	Mode     os.FileMode       //文件权限
+}
+
+func (file *File) Set(path string) error {
+	if info, err := os.Stat(path); err != nil {
+		return err
+	} else {
+		file.Mode = info.Mode()
+		file.ModeTime = info.ModTime()
+	}
+	if abs, err := filepath.Abs(path); err != nil {
+		return err
+	} else {
+		file.FilePath = abs
+	}
+	return nil
 }
 
 func NewFile() *File {
 	ch := new(File)
-	ch.Hash = make([]string, 0)
+	ch.Hash = make(map[uint64]string)
 	return ch
 }

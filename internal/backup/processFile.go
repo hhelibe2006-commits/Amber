@@ -48,7 +48,7 @@ func processFile(input string, output string, chunk *storage.Chunk, fl *storage.
 			return err
 		}
 		if !info.IsDir() {
-			err = fastcdc.FastCDC(chunk, fl, path, chunkStore)
+			err = fastcdc.FastCDC(chunk, fl, path, &chunkStore)
 			if err != nil {
 				return err
 			}

@@ -5,27 +5,29 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
+	"sync"
 
 	"github.com/hhelibe2006-commits/Amber/internal/storage"
 )
 
-func FastCDC(chunk *storage.Chunk, fl *storage.File, input string, chunk2 storage.ChunkStore) error {
+type File struct {
+	Hash string
+	by   []byte
+	i    uint64
+}
+
+func FastCDC(chunk *storage.Chunk, fl *storage.File, input string, chunk2 *storage.ChunkStore) error {
 	avg := 8 * 1024
 	minByte, maxByte := avg/4, avg*4
 	l, r := (1<<13)-1, (1<<11)-1
 	gearHash := NewGearHash()
-	info, err := os.Stat(input)
-	if err != nil {
+	ch := make(chan File, 100)
+	wg := &sync.WaitGroup{}
+	var sd uint64
+	ForChen(fl, chunk2, &ch)
+	if err := fl.Set(input); err != nil {
 		return err
 	}
-	fl.Mode = info.Mode()
-	fl.ModeTime = info.ModTime()
-	abs, err := filepath.Abs(input)
-	if err != nil {
-		return err
-	}
-	fl.FilePath = abs
 	file, err := os.Open(input)
 	if err != nil {
 		return err
@@ -42,12 +44,8 @@ func FastCDC(chunk *storage.Chunk, fl *storage.File, input string, chunk2 storag
 		n, err := file.Read(buf)
 		if err != nil {
 			if err == io.EOF {
-				hash1 := sha256.Sum256(u)
-				hash := string(hash1[:])
-				fl.Hash = append(fl.Hash, hash)
-				if _, ok := chunk2[hash]; !ok {
-					chunk2[hash] = u
-				}
+				sd += 1
+				go AddChunk(&ch, u, sd, wg)
 				break
 			}
 			return err
@@ -65,25 +63,37 @@ func FastCDC(chunk *storage.Chunk, fl *storage.File, input string, chunk2 storag
 				c = uint64(r)
 			}
 			if gearHash.l&c == 0 {
-				hash1 := sha256.Sum256(u)
-				hash := string(hash1[:])
-				fl.Hash = append(fl.Hash, hash)
-				if _, ok := chunk2[hash]; !ok {
-					chunk2[hash] = u
-				}
+				sd += 1
+				go AddChunk(&ch, u, sd, wg)
 				gearHash.l = 0
 			}
 			if len(u) > maxByte {
-				hash1 := sha256.Sum256(u)
-				hash := string(hash1[:])
-				fl.Hash = append(fl.Hash, hash)
-				if _, ok := chunk2[hash]; !ok {
-					chunk2[hash] = u
-				}
+				sd += 1
+				go AddChunk(&ch, u, sd, wg)
 				gearHash.l = 0
 			}
 		}
 	}
+	wg.Wait()
+	close(ch)
 	chunk.FileList = append(chunk.FileList, *fl)
 	return nil
+}
+
+func AddChunk(ch *chan File, u []byte, c uint64, wg *sync.WaitGroup) {
+	wg.Add(1)
+	defer wg.Done()
+	hash := sha256.Sum256(u)
+	str := string(hash[:])
+	fi := File{Hash: str, by: u, i: c}
+	*ch <- fi
+}
+
+func ForChen(fl *storage.File, chunkStore *storage.ChunkStore, ch *chan File) {
+	for input := range *ch {
+		if _, ok := (*chunkStore)[input.Hash]; !ok {
+			(*chunkStore)[input.Hash] = input.by
+		}
+		fl.Hash[input.i] = input.Hash
+	}
 }

@@ -3,6 +3,7 @@ package backup
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sync"
@@ -18,7 +19,8 @@ func Run(typ string, input cli.Put, output string) error {
 		if err != nil {
 			return err
 		}
-		err = backupFile(input, output)
+		inputList := pathToFile(input)
+		err = backupFile(inputList, output)
 		if err != nil {
 			return err
 		}
@@ -30,6 +32,25 @@ func Run(typ string, input cli.Put, output string) error {
 		return errors.New(fmt.Sprintf("不支持的备份类型%s", typ))
 	}
 	return nil
+}
+
+func pathToFile(path cli.Put) cli.Put {
+	fileList := make(cli.Put, 0, len(path))
+	for _, file := range path {
+		err := filepath.WalkDir(file, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if !d.IsDir() {
+				fileList = append(fileList, path)
+			}
+			return nil
+		})
+		if err != nil {
+			panic(err)
+		}
+	}
+	return fileList
 }
 
 func judge(input cli.Put, output string) error {
@@ -57,7 +78,7 @@ func backupFile(input cli.Put, output string) error {
 		size += uint64(info.Size())
 	}
 	errCh := make(chan error, len(input))
-	sem := make(chan struct{}, 30)
+	sem := make(chan struct{}, 8)
 	chunk := storage.NewChunk()
 	for _, file := range input {
 		wg.Add(1)
