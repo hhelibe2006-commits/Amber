@@ -24,7 +24,7 @@ func FastCDC(chunk *storage.Chunk, fl *storage.File, input string, chunk2 *stora
 	ch := make(chan File, 100)
 	wg := &sync.WaitGroup{}
 	var sd uint64
-	ForChen(fl, chunk2, &ch)
+	go ForChen(fl, chunk2, &ch)
 	if err := fl.Set(input); err != nil {
 		return err
 	}
