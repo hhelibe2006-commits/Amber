@@ -18,11 +18,12 @@ var backupCmd = &cobra.Command{
 	Short: "执行备份",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		typ, _ := cmd.Flags().GetString("type")
-		err := backup.Run(typ, input, output)
-		if err != nil {
+
+		if err := backup.Run(typ, input, output); err != nil {
 			fmt.Println("备份出现错误:", err)
+			return err
 		}
-		return err
+		return nil
 	},
 }
 
@@ -31,13 +32,13 @@ func init() {
 
 	backupCmd.Flags().VarP(&input, "input", "i", "输入路径")
 	backupCmd.Flags().StringVarP(&output, "output", "o", "", "输出路径")
-	err := backupCmd.MarkFlagRequired("output")
-	if err != nil {
+
+	if err := backupCmd.MarkFlagRequired("output"); err != nil {
 		fmt.Println("初始化出现错误:", err)
 		return
 	}
-	err = backupCmd.MarkFlagRequired("input")
-	if err != nil {
+
+	if err := backupCmd.MarkFlagRequired("input"); err != nil {
 		fmt.Println("初始化出现错误:", err)
 		return
 	}

@@ -1,6 +1,7 @@
 package backup
 
 import (
+	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"io/fs"
@@ -27,7 +28,7 @@ func processFile(input string, output string, chunk *storage.Chunk, fl *storage.
 		}(file)
 		return errors.New("输出路径已经存在")
 	}
-	chunkstore := storage.NewChunkStore()
+	chunkStore := storage.NewChunkStore()
 	err = filepath.WalkDir(input, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -47,22 +48,34 @@ func processFile(input string, output string, chunk *storage.Chunk, fl *storage.
 			return err
 		}
 		if !info.IsDir() {
-			err = fastcdc.FastCDC(chunk, fl, path, chunkstore)
+			err = fastcdc.FastCDC(chunk, fl, path, chunkStore)
 			if err != nil {
 				return err
 			}
 		}
 		return nil
 	})
-
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-			return
-		}
-	}(file)
+	if err != nil {
+		return err
+	}
+	file, err = os.Create(output)
+	if err != nil {
+		return err
+	}
 	ender := json.NewEncoder(file)
 	err = ender.Encode(chunk)
+	if err != nil {
+		return err
+	}
+	filef := filepath.Dir(output)
+	f, err := filepath.Abs(filef)
+	if err != nil {
+		return err
+	}
+	f = f + "/data.gob"
+	file, err = os.Create(f)
+	encoder := gob.NewEncoder(file)
+	err = encoder.Encode(chunkStore)
 	if err != nil {
 		return err
 	}
