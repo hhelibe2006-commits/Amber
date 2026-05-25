@@ -6,7 +6,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"sync"
 
 	"github.com/hhelibe2006-commits/Amber/internal/cli"
 	"github.com/hhelibe2006-commits/Amber/internal/storage"
@@ -15,13 +14,15 @@ import (
 func Run(typ string, input cli.Put, output string) error {
 	switch typ {
 	case "file":
+		fmt.Println("校验路径中")
 		err := judge(input, output)
 		if err != nil {
 			return err
 		}
+		fmt.Println("路径转化文件")
 		inputList := pathToFile(input)
-		err = backupFile(inputList, output)
-		if err != nil {
+		fmt.Println("备份中")
+		if err = backupFile(inputList, output); err != nil {
 			return err
 		}
 	case "system":
@@ -43,6 +44,7 @@ func pathToFile(path cli.Put) cli.Put {
 			}
 			if !d.IsDir() {
 				fileList = append(fileList, path)
+				fmt.Println(path, "已完成")
 			}
 			return nil
 		})
@@ -68,7 +70,6 @@ func judge(input cli.Put, output string) error {
 }
 
 func backupFile(input cli.Put, output string) error {
-	var wg sync.WaitGroup
 	var size uint64
 	for i := range input {
 		info, err := os.Stat(input[i])
@@ -77,26 +78,10 @@ func backupFile(input cli.Put, output string) error {
 		}
 		size += uint64(info.Size())
 	}
-	errCh := make(chan error, len(input))
-	sem := make(chan struct{}, 8)
 	chunk := storage.NewChunk()
-	for _, file := range input {
-		wg.Add(1)
-		sem <- struct{}{}
-		go func(p string) {
-			defer wg.Done()
-			defer func() { <-sem }()
-			fl := storage.NewFile()
-			err := processFile(file, output, chunk, fl)
-			if err != nil {
-				errCh <- err
-			}
-		}(file)
-	}
-	if len(errCh) > 0 {
-		err := <-errCh
+	err := processFile(input, output, chunk)
+	if err != nil {
 		return err
 	}
-	wg.Wait()
 	return nil
 }

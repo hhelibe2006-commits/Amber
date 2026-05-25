@@ -18,7 +18,7 @@ func NewChunk() *Chunk {
 }
 
 type File struct {
-	FilePath string            //文件路径
+	FilePath string            //文件路径和文件名
 	Hash     map[uint64]string //文件分块的哈希值
 	ModeTime time.Time         //文件最后修改时间
 	Mode     os.FileMode       //文件权限

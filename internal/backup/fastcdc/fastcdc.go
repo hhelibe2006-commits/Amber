@@ -16,10 +16,11 @@ type File struct {
 	i    uint64
 }
 
-func FastCDC(chunk *storage.Chunk, fl *storage.File, input string, chunk2 *storage.ChunkStore) error {
+func FastCDC(chunk *storage.Chunk, input string, chunk2 *storage.ChunkStore) error {
 	avg := 8 * 1024
 	minByte, maxByte := avg/4, avg*4
 	l, r := (1<<13)-1, (1<<11)-1
+	fl := storage.NewFile()
 	gearHash := NewGearHash()
 	ch := make(chan File, 100)
 	wg := &sync.WaitGroup{}
