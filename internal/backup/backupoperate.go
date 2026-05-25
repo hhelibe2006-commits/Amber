@@ -86,5 +86,12 @@ func backupFile(input cli.PathList, output string) error {
 	}
 	fmt.Println("压缩中")
 	err = compression.AddFileToZip(output)
+	if err != nil {
+		return err
+	}
+	err = os.Remove(output)
+	if err != nil {
+		return err
+	}
 	return nil
 }
