@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/hhelibe2006-commits/Amber/internal/cli"
+	"github.com/hhelibe2006-commits/Amber/internal/compression"
 	"github.com/hhelibe2006-commits/Amber/internal/storage"
 )
 
@@ -83,5 +84,7 @@ func backupFile(input cli.PathList, output string) error {
 	if err != nil {
 		return err
 	}
+	fmt.Println("压缩中")
+	err = compression.AddFileToZip(output)
 	return nil
 }
