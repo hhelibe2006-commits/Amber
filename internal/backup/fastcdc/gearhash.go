@@ -3,12 +3,12 @@ package fastcdc
 import "math/rand/v2"
 
 type GearHash struct {
-	table [256]uint64
-	l     uint64
+	table     [256]uint64
+	hashValue uint64
 }
 
 func (g *GearHash) Next(b byte) {
-	g.l = (g.l << 1) + g.table[b]
+	g.hashValue = (g.hashValue << 1) + g.table[b]
 }
 
 func NewGearHash() *GearHash {

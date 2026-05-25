@@ -11,16 +11,16 @@ import (
 	"github.com/hhelibe2006-commits/Amber/internal/storage"
 )
 
-func Run(typ string, input cli.Put, output string) error {
+func Run(typ string, input cli.PathList, output string) error {
 	switch typ {
 	case "file":
 		fmt.Println("校验路径中")
-		err := judge(input, output)
+		err := validatePaths(input, output)
 		if err != nil {
 			return err
 		}
 		fmt.Println("路径转化文件")
-		inputList := pathToFile(input)
+		inputList := listFiles(input)
 		fmt.Println("备份中")
 		if err = backupFile(inputList, output); err != nil {
 			return err
@@ -35,8 +35,8 @@ func Run(typ string, input cli.Put, output string) error {
 	return nil
 }
 
-func pathToFile(path cli.Put) cli.Put {
-	fileList := make(cli.Put, 0, len(path))
+func listFiles(path cli.PathList) cli.PathList {
+	fileList := make(cli.PathList, 0, len(path))
 	for _, file := range path {
 		err := filepath.WalkDir(file, func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
@@ -55,7 +55,7 @@ func pathToFile(path cli.Put) cli.Put {
 	return fileList
 }
 
-func judge(input cli.Put, output string) error {
+func validatePaths(input cli.PathList, output string) error {
 	for i := 0; i < len(input); i++ {
 		inPath := filepath.Clean(input[i])
 		if _, err := os.Stat(inPath); os.IsNotExist(err) {
@@ -69,7 +69,7 @@ func judge(input cli.Put, output string) error {
 	return nil
 }
 
-func backupFile(input cli.Put, output string) error {
+func backupFile(input cli.PathList, output string) error {
 	var size uint64
 	for i := range input {
 		info, err := os.Stat(input[i])
@@ -78,7 +78,7 @@ func backupFile(input cli.Put, output string) error {
 		}
 		size += uint64(info.Size())
 	}
-	chunk := storage.NewChunk()
+	chunk := storage.NewManifest()
 	err := processFile(input, output, chunk)
 	if err != nil {
 		return err

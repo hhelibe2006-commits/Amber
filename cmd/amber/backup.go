@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	input  cli.Put
+	input  cli.PathList
 	output string
 )
 
@@ -19,8 +19,10 @@ var backupCmd = &cobra.Command{
 	Short: "执行备份",
 	//RunE会返回错误，而Run不会，所以使用RunE
 	RunE: func(cmd *cobra.Command, args []string) error {
-		typ, _ := cmd.Flags().GetString("type")
-
+		typ, err := cmd.Flags().GetString("type")
+		if err != nil {
+			return err
+		}
 		if err := backup.Run(typ, input, output); err != nil {
 			fmt.Println("备份出现错误:", err)
 			return err

@@ -11,7 +11,7 @@ import (
 	"github.com/hhelibe2006-commits/Amber/internal/storage"
 )
 
-func processFile(input []string, output string, chunk *storage.Chunk) error {
+func processFile(input []string, output string, chunk *storage.Manifest) error {
 	file, err := os.Open(output)
 	if err != nil {
 		if !os.IsNotExist(err) {
@@ -62,12 +62,12 @@ func processFile(input []string, output string, chunk *storage.Chunk) error {
 	if file, err = os.Create(output); err != nil {
 		return err
 	}
-	ender := gob.NewEncoder(file)
-	if err = ender.Encode(chunk); err != nil {
+	encoder := gob.NewEncoder(file)
+	if err = encoder.Encode(chunk); err != nil {
 		return err
 	}
 	for key, value := range chunkStore {
-		if err := ender.Encode([2]interface{}{key, value}); err != nil {
+		if err := encoder.Encode([2]interface{}{key, value}); err != nil {
 			return err
 		}
 	}

@@ -2,17 +2,17 @@ package cli
 
 import "strings"
 
-type Put []string
+type PathList []string
 
-func (i *Put) String() string {
+func (i *PathList) String() string {
 	return strings.Join(*i, " ")
 }
 
-func (i *Put) Set(value string) error {
+func (i *PathList) Set(value string) error {
 	*i = append(*i, value)
 	return nil
 }
 
-func (i *Put) Type() string {
+func (i *PathList) Type() string {
 	return "string"
 }
