@@ -2,7 +2,6 @@ package backup
 
 import (
 	"encoding/gob"
-	"encoding/json"
 	"errors"
 	"io/fs"
 	"os"
@@ -63,21 +62,13 @@ func processFile(input []string, output string, chunk *storage.Chunk) error {
 	if file, err = os.Create(output); err != nil {
 		return err
 	}
-	ender := json.NewEncoder(file)
+	ender := gob.NewEncoder(file)
 	if err = ender.Encode(chunk); err != nil {
 		return err
 	}
-	filef := filepath.Dir(output)
-	if f, err := filepath.Abs(filef); err != nil {
-		return err
-	} else {
-		f = f + "/data.gob"
-		file, err = os.Create(f)
-		encoder := gob.NewEncoder(file)
-		for key, value := range chunkStore {
-			if err := encoder.Encode([2]interface{}{key, value}); err != nil {
-				return err
-			}
+	for key, value := range chunkStore {
+		if err := ender.Encode([2]interface{}{key, value}); err != nil {
+			return err
 		}
 	}
 	return nil

@@ -46,7 +46,9 @@ func FastCDC(chunk *storage.Chunk, input string, chunk2 *storage.ChunkStore) err
 		if err != nil {
 			if err == io.EOF {
 				sd += 1
+				wg.Add(1)
 				go AddChunk(&ch, u, sd, wg)
+				u = u[:0]
 				break
 			}
 			return err
@@ -65,13 +67,17 @@ func FastCDC(chunk *storage.Chunk, input string, chunk2 *storage.ChunkStore) err
 			}
 			if gearHash.l&c == 0 {
 				sd += 1
+				wg.Add(1)
 				go AddChunk(&ch, u, sd, wg)
 				gearHash.l = 0
+				u = u[:0]
 			}
 			if len(u) > maxByte {
 				sd += 1
+				wg.Add(1)
 				go AddChunk(&ch, u, sd, wg)
 				gearHash.l = 0
+				u = u[:0]
 			}
 		}
 	}
@@ -82,7 +88,6 @@ func FastCDC(chunk *storage.Chunk, input string, chunk2 *storage.ChunkStore) err
 }
 
 func AddChunk(ch *chan File, u []byte, c uint64, wg *sync.WaitGroup) {
-	wg.Add(1)
 	defer wg.Done()
 	hash := sha256.Sum256(u)
 	str := string(hash[:])
