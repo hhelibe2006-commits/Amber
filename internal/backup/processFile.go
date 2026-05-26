@@ -1,6 +1,7 @@
 package backup
 
 import (
+	"compress/gzip"
 	"encoding/gob"
 	"errors"
 	"io/fs"
@@ -62,7 +63,8 @@ func processFile(input []string, output string, chunk *storage.Manifest) error {
 	if file, err = os.Create(output); err != nil {
 		return err
 	}
-	encoder := gob.NewEncoder(file)
+	gzipWriter := gzip.NewWriter(file)
+	encoder := gob.NewEncoder(gzipWriter)
 	if err = encoder.Encode(chunk); err != nil {
 		return err
 	}
