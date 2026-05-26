@@ -8,30 +8,27 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	input  cli.PathList
-	output string
-)
-
-// 备份命令
-var backupCmd = &cobra.Command{
-	Use:   "backup [source]",
-	Short: "执行备份",
-	//RunE会返回错误，而Run不会，所以使用RunE
-	RunE: func(cmd *cobra.Command, args []string) error {
-		typ, err := cmd.Flags().GetString("type")
-		if err != nil {
-			return err
-		}
-		if err := backup.Run(typ, input, output); err != nil {
-			fmt.Println("备份出现错误:", err)
-			return err
-		}
-		return nil
-	},
-}
-
 func init() {
+	var input cli.PathList
+	var output string
+
+	// 备份命令
+	var backupCmd = &cobra.Command{
+		Use:   "backup [source]",
+		Short: "执行备份",
+		//RunE会返回错误，而Run不会，所以使用RunE
+		RunE: func(cmd *cobra.Command, args []string) error {
+			typ, err := cmd.Flags().GetString("type")
+			if err != nil {
+				return err
+			}
+			if err := backup.Run(typ, input, output); err != nil {
+				fmt.Println("备份出现错误:", err)
+				return err
+			}
+			return nil
+		},
+	}
 	rootCmd.AddCommand(backupCmd)
 
 	backupCmd.Flags().VarP(&input, "input", "i", "输入路径")

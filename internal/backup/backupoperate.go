@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 
 	"github.com/hhelibe2006-commits/Amber/internal/cli"
-	"github.com/hhelibe2006-commits/Amber/internal/compression"
 	"github.com/hhelibe2006-commits/Amber/internal/storage"
 )
 
@@ -22,7 +21,7 @@ func Run(typ string, input cli.PathList, output string) error {
 		}
 		fmt.Println("路径转化文件")
 		inputList := listFiles(input)
-		fmt.Println("备份中")
+		fmt.Println("压缩备份中")
 		if err = backupFile(inputList, output); err != nil {
 			return err
 		}
@@ -81,15 +80,6 @@ func backupFile(input cli.PathList, output string) error {
 	}
 	chunk := storage.NewManifest()
 	err := processFile(input, output, chunk)
-	if err != nil {
-		return err
-	}
-	fmt.Println("压缩中")
-	err = compression.AddFileToZip(output)
-	if err != nil {
-		return err
-	}
-	err = os.Remove(output)
 	if err != nil {
 		return err
 	}

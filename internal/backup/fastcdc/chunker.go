@@ -24,7 +24,7 @@ func FastCDC(chunk *storage.Manifest, input string, chunk2 *storage.ChunkStore) 
 	l, r := (1<<13)-1, (1<<11)-1
 	fl := storage.NewFileMeta()
 	gearHash := NewGearHash()
-	ch := make(chan BlockMeta, 100)
+	ch := make(chan *BlockMeta, 100)
 	wg := &sync.WaitGroup{}
 	var seq uint64
 	go consumeChunks(fl, chunk2, ch)
@@ -89,15 +89,15 @@ func FastCDC(chunk *storage.Manifest, input string, chunk2 *storage.ChunkStore) 
 	return nil
 }
 
-func addChunk(ch chan BlockMeta, u []byte, c uint64, wg *sync.WaitGroup) {
+func addChunk(ch chan *BlockMeta, u []byte, c uint64, wg *sync.WaitGroup) {
 	defer wg.Done()
 	hash := sha256.Sum256(u)
 	str := string(hash[:])
 	fi := BlockMeta{Hash: str, bytes: u, Index: c}
-	ch <- fi
+	ch <- &fi
 }
 
-func consumeChunks(fl *storage.FileMeta, chunkStore *storage.ChunkStore, ch chan BlockMeta) {
+func consumeChunks(fl *storage.FileMeta, chunkStore *storage.ChunkStore, ch chan *BlockMeta) {
 	for input := range ch {
 		if _, ok := (*chunkStore)[input.Hash]; !ok {
 			(*chunkStore)[input.Hash] = input.bytes
