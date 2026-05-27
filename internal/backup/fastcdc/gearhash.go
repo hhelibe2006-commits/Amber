@@ -20,8 +20,15 @@ func NewGearHash() *GearHash {
 	return g
 }
 
-type Number string
+type Number [4]uint64
 
-func (n *Number) Next() Number {
-
+func (n *Number) Next() {
+	for i := 3; i > 0; i-- {
+		if n[i] == (1<<64)-1 {
+			n[i] = 0
+		} else {
+			n[i] += 1
+			break
+		}
+	}
 }
