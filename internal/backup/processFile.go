@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-func processFile(input []string, output string) error {
+func processFile(input []string, output string, progress chan uint64) error {
 	file, err := os.Create(output)
 	if err != nil {
 		return err
@@ -17,6 +17,9 @@ func processFile(input []string, output string) error {
 			return
 		}
 	}()
+	for _, line := range input {
+		println(line)
+	}
 	writer := gzip.NewWriter(file)
 	encoder := gob.NewEncoder(writer)
 	println(encoder.Encode(input))
