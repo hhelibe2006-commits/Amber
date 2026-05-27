@@ -18,7 +18,7 @@ type BlockMeta struct {
 }
 
 // FastCDC 用于将单个文件切分成多个块，并将每个块的哈希值存储在chunkStore中，同时将文件的元数据存储在Manifest中
-func FastCDC(chunk *storage.Manifest, input string, chunk2 *storage.ChunkStore) error {
+func FastCDC(input string, chunk2 *storage.ChunkStore) error {
 	avg := 8 * 1024
 	minByte, maxByte := avg/4, avg*4
 	l, r := (1<<13)-1, (1<<11)-1
@@ -36,8 +36,7 @@ func FastCDC(chunk *storage.Manifest, input string, chunk2 *storage.ChunkStore) 
 		return err
 	}
 	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
+		if err := file.Close(); err != nil {
 			fmt.Println(err)
 		}
 	}(file)
@@ -85,7 +84,6 @@ func FastCDC(chunk *storage.Manifest, input string, chunk2 *storage.ChunkStore) 
 	}
 	wg.Wait()
 	close(ch)
-	chunk.FileList = append(chunk.FileList, *fl)
 	return nil
 }
 
@@ -100,7 +98,7 @@ func addChunk(ch chan *BlockMeta, u []byte, c uint64, wg *sync.WaitGroup) {
 func consumeChunks(fl *storage.FileMeta, chunkStore *storage.ChunkStore, ch chan *BlockMeta) {
 	for input := range ch {
 		if _, ok := (*chunkStore)[input.Hash]; !ok {
-			(*chunkStore)[input.Hash] = input.bytes
+
 		}
 		fl.Hash[input.Index] = input.Hash
 	}

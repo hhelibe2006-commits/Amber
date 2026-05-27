@@ -19,3 +19,9 @@ func NewGearHash() *GearHash {
 	}
 	return g
 }
+
+type Number string
+
+func (n *Number) Next() Number {
+
+}

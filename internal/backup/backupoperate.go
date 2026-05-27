@@ -8,21 +8,19 @@ import (
 	"path/filepath"
 
 	"github.com/hhelibe2006-commits/Amber/internal/cli"
-	"github.com/hhelibe2006-commits/Amber/internal/storage"
 )
 
 func Run(typ string, input cli.PathList, output string) error {
 	switch typ {
 	case "file":
 		fmt.Println("校验路径中")
-		err := validatePaths(input, output)
-		if err != nil {
+		if err := validatePaths(input, output); err != nil {
 			return err
 		}
 		fmt.Println("路径转化文件")
 		inputList := listFiles(input)
 		fmt.Println("压缩备份中")
-		if err = backupFile(inputList, output); err != nil {
+		if err := backupFile(inputList, output); err != nil {
 			return err
 		}
 	case "system":
@@ -62,6 +60,9 @@ func validatePaths(input cli.PathList, output string) error {
 			return errors.New(fmt.Sprintf("不存在该文件或目录%s", input[i]))
 		}
 	}
+	if _, err := os.Stat(output); !os.IsNotExist(err) {
+		return errors.New("输出路径已经存在")
+	}
 	outPath := filepath.Dir(filepath.Clean(output))
 	if _, err := os.Stat(outPath); os.IsNotExist(err) {
 		return errors.New(fmt.Sprintf("不存在该文件或目录%s", output))
@@ -78,8 +79,7 @@ func backupFile(input cli.PathList, output string) error {
 		}
 		size += uint64(info.Size())
 	}
-	chunk := storage.NewManifest()
-	err := processFile(input, output, chunk)
+	err := processFile(input, output)
 	if err != nil {
 		return err
 	}

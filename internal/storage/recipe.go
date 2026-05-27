@@ -7,13 +7,13 @@ import (
 )
 
 type Manifest struct {
-	Name     string     `json:"name"`
-	FileList []FileMeta `json:"file list"`
+	Name         string
+	FileNameList []string
 }
 
 func NewManifest() *Manifest {
 	ch := new(Manifest)
-	ch.FileList = make([]FileMeta, 0)
+	ch.FileNameList = make([]string, 0)
 	return ch
 }
 
