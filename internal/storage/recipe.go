@@ -2,45 +2,32 @@ package storage
 
 import (
 	"os"
-	"path/filepath"
 	"time"
 )
 
 type Manifest struct {
 	Name         string
-	FileNameList []string
+	FileNameList map[string]*FileMeta
 }
 
 func NewManifest() *Manifest {
-	ch := new(Manifest)
-	ch.FileNameList = make([]string, 0)
-	return ch
+	m := new(Manifest)
+	m.FileNameList = make(map[string]*FileMeta)
+	return m
 }
 
 type FileMeta struct {
-	FilePath string            //文件路径和文件名
-	Hash     map[uint64]string //文件分块的哈希值
-	ModeTime time.Time         //文件最后修改时间
-	Mode     os.FileMode       //文件权限
-}
-
-func (file *FileMeta) Set(path string) error {
-	if info, err := os.Stat(path); err != nil {
-		return err
-	} else {
-		file.Mode = info.Mode()
-		file.ModeTime = info.ModTime()
-	}
-	if abs, err := filepath.Abs(path); err != nil {
-		return err
-	} else {
-		file.FilePath = abs
-	}
-	return nil
+	FilePath string //文件路径和文件名
+	//Hash     map[uint64]string //文件分块的哈希值
+	ModeTime  time.Time   //文件最后修改时间
+	Mode      os.FileMode //文件权限
+	Locations []int64
+	Lengths   []int64
 }
 
 func NewFileMeta() *FileMeta {
-	ch := new(FileMeta)
-	ch.Hash = make(map[uint64]string)
-	return ch
+	fileMeta := new(FileMeta)
+	fileMeta.Lengths = make([]int64, 0)
+	fileMeta.Locations = make([]int64, 0)
+	return fileMeta
 }

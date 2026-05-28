@@ -1,6 +1,7 @@
 package storage
 
 type ChunkStore struct {
+	Name string
 	Hash string
 	Buf  []byte
 }

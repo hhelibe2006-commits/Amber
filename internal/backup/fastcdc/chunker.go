@@ -42,6 +42,7 @@ func FastCDC(input string, ch chan *storage.ChunkStore) error {
 			if len(u) != 0 {
 				hash := sha256.Sum256(u)
 				ma := storage.NewChunkStore()
+				ma.Name = input
 				ma.Buf = u
 				ma.Hash = string(hash[:])
 				ch <- ma
@@ -65,6 +66,7 @@ func FastCDC(input string, ch chan *storage.ChunkStore) error {
 				ma := storage.NewChunkStore()
 				ma.Buf = u
 				ma.Hash = string(hash[:])
+				ma.Name = input
 				ch <- ma
 				u = u[:0]
 			}

@@ -80,7 +80,8 @@ func backupFile(input cli.PathList, output string) error {
 		size += uint64(info.Size())
 	}
 	progress := make(chan *uint64)
-	go progressBar(progress)
+	defer close(progress)
+	//go progressBar(progress)
 	err := processFile(input, output, progress)
 	if err != nil {
 		return err
