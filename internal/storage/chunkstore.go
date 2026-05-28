@@ -1,9 +1,12 @@
 package storage
 
-type ChunkStore map[string][]byte
+type ChunkStore struct {
+	Hash string
+	Buf  []byte
+}
 
-func NewChunkStore() ChunkStore {
-	return make(ChunkStore)
+func NewChunkStore() *ChunkStore {
+	return new(ChunkStore)
 }
 
 type HashSet map[string]struct{}

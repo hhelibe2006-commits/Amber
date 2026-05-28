@@ -79,7 +79,7 @@ func backupFile(input cli.PathList, output string) error {
 		}
 		size += uint64(info.Size())
 	}
-	progress := make(chan uint64)
+	progress := make(chan *uint64)
 	go progressBar(progress)
 	err := processFile(input, output, progress)
 	if err != nil {
@@ -88,7 +88,7 @@ func backupFile(input cli.PathList, output string) error {
 	return nil
 }
 
-func progressBar(ch chan uint64) {
+func progressBar(ch chan *uint64) {
 	for i := range ch {
 		fmt.Println(i)
 	}
