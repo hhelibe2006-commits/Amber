@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/hhelibe2006-commits/Amber/internal/backup/file/fastcdc"
+	"github.com/hhelibe2006-commits/Amber/internal/backup/file/writer"
 )
 
 func BackupFile(input []string, output string) error {
@@ -58,8 +59,13 @@ func BackupFile(input []string, output string) error {
 	}()
 
 	ch := make(chan fastcdc.Info, 100)
+	go writer.Writer()
+
 	for _, file := range input {
-		fastcdc.FastCDC(file, ch)
+		err := fastcdc.FastCDC(file, ch)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
