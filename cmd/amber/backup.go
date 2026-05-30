@@ -4,12 +4,12 @@ import (
 	"fmt"
 
 	"github.com/hhelibe2006-commits/Amber/internal/backup"
-	"github.com/hhelibe2006-commits/Amber/internal/cli"
+	"github.com/hhelibe2006-commits/Amber/internal/value"
 	"github.com/spf13/cobra"
 )
 
 func init() {
-	var input cli.PathList
+	var input value.PathList
 	var output string
 
 	// 备份命令
