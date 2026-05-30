@@ -47,32 +47,35 @@ func BackupFile(input []string, output string) error {
 			return
 		}
 	}(w)
+
 	for _, file := range fileList {
 		f, err := filepath.Abs(file)
 		if err != nil {
 			return err
 		}
-		zipFile, err := os.Open(f)
+
+		srcFile, err := os.Open(f)
 		if err != nil {
 			return err
 		}
-		defer func(zipFile *os.File) {
-			err := zipFile.Close()
+		func() {
+			defer func(srcFile *os.File) {
+				err := srcFile.Close()
+				if err != nil {
+					return
+				}
+			}(srcFile)
+			entryName := filepath.Base(f)
+			entryName = filepath.ToSlash(entryName)
+
+			entryWriter, err := w.Create(entryName)
 			if err != nil {
-				return
+				panic(err)
 			}
-		}(zipFile)
-		u, err := w.Create(zipFile.Name())
-		if err != nil {
-			return err
-		}
-		if _, err = io.Copy(u, zipFile); err != nil {
-			return err
-		}
-		err = zipFile.Close()
-		if err != nil {
-			return err
-		}
+			if _, err := io.Copy(entryWriter, srcFile); err != nil {
+				panic(err)
+			}
+		}()
 	}
 	return nil
 }
