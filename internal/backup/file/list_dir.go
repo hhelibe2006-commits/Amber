@@ -7,7 +7,7 @@ import (
 )
 
 func ListDir(path []string) ([]string, error) {
-	fileList := make([]string, len(path))
+	fileList := make([]string, 0, len(path))
 	for _, file := range path {
 		err := filepath.Walk(file, func(path string, info os.FileInfo, err error) error {
 			if err != nil {

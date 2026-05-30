@@ -7,9 +7,9 @@ import (
 
 type TempFiles struct {
 	tempDir  string
-	TempDate *os.File
-	TempHash *os.File
-	TempFile *os.File
+	TempDate *os.File //数据的存放位置
+	TempHash *os.File //哈希与位置的对应关系
+	TempFile *os.File //文件相关信息
 }
 
 func NewTempFiles() *TempFiles {

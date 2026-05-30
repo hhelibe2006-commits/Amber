@@ -17,7 +17,7 @@ func NewGearHash() *GearHash {
 	g.value = 0
 	for i := 0; i < len(g.Gear); i++ {
 		g.Gear[i] = r.Uint64()
-		println(g.Gear[i])
+		//println(g.Gear[i])
 	}
 	return g
 }
