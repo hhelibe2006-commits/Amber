@@ -13,20 +13,26 @@ func BackupFile(input []string, output string) error {
 	tempFiles := value.NewTempFiles()
 	defer tempFiles.Close()
 	defer tempFiles.Remove()
+	uv := new(sync.WaitGroup)
 	wg := new(sync.WaitGroup)
-	ch := make(chan value.Info, 100)
+	ch := make(chan value.Info, 1000)
 	wg.Add(1)
 	go writer.Writer(ch, tempFiles, wg)
-
+	dc := make(chan struct{}, 3)
 	for _, file := range input {
-		func() {
+		uv.Add(1)
+		go func(wg *sync.WaitGroup) {
+			defer wg.Done()
+			dc <- struct{}{}
+			defer func() { <-dc }()
 			err := fastcdc.FastCDC(file, ch)
 			if err != nil {
 				fmt.Println("切割出错:", err)
 			}
-		}()
+		}(uv)
 	}
 	close(ch)
+	uv.Wait()
 	wg.Wait()
 	writer.Compress(output, tempFiles)
 	return nil
