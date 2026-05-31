@@ -7,13 +7,12 @@ import (
 	"io"
 	"os"
 
-	"github.com/hhelibe2006-commits/Amber/internal/backup/file/fastcdc"
 	"github.com/hhelibe2006-commits/Amber/internal/value"
 )
 
-func Writer(ch chan fastcdc.Info, tempFiles *value.TempFiles) {
+func Writer(ch chan value.Info, tempFiles *value.TempFiles) {
 	fileMa := make(map[string]*value.File)
-	ma := make(map[string]struct {
+	ma := make(map[[32]byte]struct {
 		a int64
 		b int64
 	})
@@ -33,7 +32,7 @@ func Writer(ch chan fastcdc.Info, tempFiles *value.TempFiles) {
 				return
 			}
 			fileMa[info.Path] = &value.File{
-				HashList: make([]string, 0, 1),
+				HashList: make([][32]byte, 0, 1),
 				Path:     info.Path,
 				ModTime:  c.ModTime(),
 				Mode:     c.Mode(),

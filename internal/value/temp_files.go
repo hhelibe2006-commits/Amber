@@ -57,3 +57,11 @@ func (tempFiles *TempFiles) Remove() {
 		return
 	}
 }
+
+func (tempFiles *TempFiles) FileList() []string {
+	fileList := make([]string, 0, 3)
+	fileList = append(fileList, tempFiles.TempFile.Name())
+	fileList = append(fileList, tempFiles.TempDate.Name())
+	fileList = append(fileList, tempFiles.TempHash.Name())
+	return fileList
+}

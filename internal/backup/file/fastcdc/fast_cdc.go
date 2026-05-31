@@ -6,9 +6,11 @@ import (
 	"io"
 	"os"
 	"sync"
+
+	"github.com/hhelibe2006-commits/Amber/internal/value"
 )
 
-func FastCDC(path string, ch chan Info, wg *sync.WaitGroup) error {
+func FastCDC(path string, ch chan value.Info, wg *sync.WaitGroup) error {
 	fmt.Println("正在备份", path)
 	defer wg.Done()
 	avg := uint64(1 << 14)
@@ -35,13 +37,8 @@ func FastCDC(path string, ch chan Info, wg *sync.WaitGroup) error {
 			return err
 		}
 		if n == 0 {
-			info := new(Info)
-			info.Path = path
-			hash := sha256.Sum256(u)
-			info.Hash = string(hash[:])
-			info.Value = u
-			ch <- *info
-			u = u[:0]
+			info := new(value.Info)
+			info.Set(path, &u, sha256.Sum256(u), ch)
 			break
 		}
 		for _, b := range by[:n] {
@@ -51,13 +48,8 @@ func FastCDC(path string, ch chan Info, wg *sync.WaitGroup) error {
 				continue
 			}
 			if g.value&(avg-1) == 0 || uint64(len(u)) > maxByte {
-				info := new(Info)
-				info.Path = path
-				hash := sha256.Sum256(u)
-				info.Hash = string(hash[:])
-				info.Value = u
-				ch <- *info
-				u = u[:0]
+				info := new(value.Info)
+				info.Set(path, &u, sha256.Sum256(u), ch)
 			}
 		}
 	}
