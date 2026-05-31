@@ -7,7 +7,7 @@ import (
 
 type TempFiles struct {
 	tempDir  string
-	TempDate *os.File //数据的存放位置
+	TempDate string   //数据的存放位置
 	TempHash *os.File //哈希与位置的对应关系
 	TempFile *os.File //文件相关信息
 }
@@ -20,10 +20,10 @@ func NewTempFiles() *TempFiles {
 		panic(err)
 	}
 
-	datePath := filepath.Join(tempFiles.tempDir, "date")
-	tempFiles.TempDate, err = os.Create(datePath)
+	tempFiles.TempDate = filepath.Join(tempFiles.tempDir, "date")
+	err = os.MkdirAll(tempFiles.TempDate, os.ModePerm)
 	if err != nil {
-		panic(err)
+		return nil
 	}
 
 	hashPath := filepath.Join(tempFiles.tempDir, "hash")
@@ -41,9 +41,6 @@ func NewTempFiles() *TempFiles {
 }
 
 func (tempFiles *TempFiles) Close() {
-	if err := tempFiles.TempDate.Close(); err != nil {
-		return
-	}
 	if err := tempFiles.TempHash.Close(); err != nil {
 		return
 	}
@@ -61,7 +58,7 @@ func (tempFiles *TempFiles) Remove() {
 func (tempFiles *TempFiles) FileList() []string {
 	fileList := make([]string, 0, 3)
 	fileList = append(fileList, tempFiles.TempFile.Name())
-	fileList = append(fileList, tempFiles.TempDate.Name())
+	fileList = append(fileList, tempFiles.TempDate)
 	fileList = append(fileList, tempFiles.TempHash.Name())
 	return fileList
 }

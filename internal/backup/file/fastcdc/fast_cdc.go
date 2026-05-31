@@ -5,14 +5,12 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sync"
 
 	"github.com/hhelibe2006-commits/Amber/internal/value"
 )
 
-func FastCDC(path string, ch chan value.Info, wg *sync.WaitGroup) error {
+func FastCDC(path string, ch chan value.Info) error {
 	fmt.Println("正在备份", path)
-	defer wg.Done()
 	avg := uint64(1 << 14)
 	maxByte, minByte := avg*4, avg/4
 	g := NewGearHash()

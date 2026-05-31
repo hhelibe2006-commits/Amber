@@ -34,32 +34,49 @@ func Compress(output string, tempFiles *value.TempFiles) {
 
 	for _, file := range fileList {
 		func() {
-			f, err := os.Open(file)
-			if err != nil {
+			if _, err := os.Stat(file); err != nil {
 				fmt.Println(err)
-			}
-			info, err := f.Stat()
-			header, err := zip.FileInfoHeader(info)
-			header.Method = zip.Store
-			name, err := filepath.Abs(file)
-			if err != nil {
-				fmt.Println(err)
-			}
-			header.Name = filepath.Base(name)
-			writer, err := zipWriter.CreateHeader(header)
-			if err != nil {
-				fmt.Println(err)
-			}
-			_, err = io.Copy(writer, f)
-			if err != nil {
-				fmt.Println(err)
-			}
-			defer func(f *os.File) {
-				err := f.Close()
+				return
+			} else {
+				err = filepath.Walk(file, func(path string, info os.FileInfo, err error) error {
+					if err != nil {
+						return err
+					}
+					if info.IsDir() {
+						return nil
+					}
+					f, err := os.Open(path)
+					if err != nil {
+						fmt.Println(err)
+					}
+					info, err = f.Stat()
+					header, err := zip.FileInfoHeader(info)
+					header.Method = zip.Store
+					name, err := filepath.Abs(path)
+					if err != nil {
+						fmt.Println(err)
+					}
+					header.Name = filepath.Base(name)
+					writer, err := zipWriter.CreateHeader(header)
+					if err != nil {
+						fmt.Println(err)
+					}
+					_, err = io.Copy(writer, f)
+					if err != nil {
+						fmt.Println(err)
+					}
+					defer func(f *os.File) {
+						err := f.Close()
+						if err != nil {
+							fmt.Println(err)
+						}
+					}(f)
+					return nil
+				})
 				if err != nil {
 					fmt.Println(err)
 				}
-			}(f)
+			}
 		}()
 	}
 }

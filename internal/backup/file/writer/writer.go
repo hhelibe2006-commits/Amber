@@ -1,32 +1,24 @@
 package writer
 
 import (
-	"bufio"
 	"compress/gzip"
 	"encoding/gob"
+	"encoding/hex"
 	"fmt"
-	"io"
 	"os"
+	"path/filepath"
+	"sync"
 
 	"github.com/hhelibe2006-commits/Amber/internal/value"
 )
 
-func Writer(ch chan value.Info, tempFiles *value.TempFiles) {
+func Writer(ch chan value.Info, tempFiles *value.TempFiles, wg *sync.WaitGroup) {
+	defer wg.Done()
 	fileMa := make(map[string]*value.File)
-	ma := make(map[[32]byte]struct {
-		a int64
-		b int64
-	})
-	dateWrite := gzip.NewWriter(tempFiles.TempDate)
-	bufferedWriter := bufio.NewWriterSize(dateWrite, 16*1024*1024)
-	defer func(dateWrite *gzip.Writer) {
-		err := dateWrite.Close()
-		if err != nil {
-			return
-		}
-	}(dateWrite)
+	ma := make(map[string]struct{})
+	fileDir := tempFiles.TempDate
 	for info := range ch {
-		hash := info.Hash
+		hash := hex.EncodeToString(info.Hash[:])
 		if _, ok := fileMa[info.Path]; !ok {
 			c, err := os.Stat(info.Path)
 			if err != nil {
@@ -34,33 +26,38 @@ func Writer(ch chan value.Info, tempFiles *value.TempFiles) {
 				return
 			}
 			fileMa[info.Path] = &value.File{
-				HashList: make([][32]byte, 0, 1),
+				HashList: make([]string, 0, 1),
 				Path:     info.Path,
 				ModTime:  c.ModTime(),
 				Mode:     c.Mode(),
+			}
+			file, err := os.Create(filepath.Join(fileDir, hash))
+			if err != nil {
+				fmt.Println(err)
+			}
+			func() {
+				gWriter := gzip.NewWriter(file)
+				defer func(gWriter *gzip.Writer) {
+					err := gWriter.Close()
+					if err != nil {
+						fmt.Println(err)
+					}
+				}(gWriter)
+				_, err = gWriter.Write(info.Value)
+				if err != nil {
+					return
+				}
+			}()
+			err = file.Close()
+			if err != nil {
+				return
 			}
 		}
 		if _, ok := ma[hash]; ok {
 			fileMa[info.Path].HashList = append(fileMa[info.Path].HashList, hash)
 			continue
 		}
-		a, err := tempFiles.TempDate.Seek(0, io.SeekCurrent)
-		if err != nil {
-			fmt.Println("切片起始位置获取错误")
-			return
-		}
-		if _, err := bufferedWriter.Write(info.Value); err != nil {
-			return
-		}
-		b, err := tempFiles.TempDate.Seek(0, io.SeekCurrent)
-		if err != nil {
-			fmt.Println("切片末尾获取错误")
-			return
-		}
-		ma[hash] = struct {
-			a int64
-			b int64
-		}{a: a, b: b}
+		ma[hash] = struct{}{}
 		fileMa[info.Path].HashList = append(fileMa[info.Path].HashList, hash)
 	}
 	write := gob.NewEncoder(tempFiles.TempHash)

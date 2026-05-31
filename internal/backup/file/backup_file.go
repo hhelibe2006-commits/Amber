@@ -14,20 +14,20 @@ func BackupFile(input []string, output string) error {
 	defer tempFiles.Close()
 	defer tempFiles.Remove()
 	wg := new(sync.WaitGroup)
-	ch := make(chan value.Info, 1000)
-	go writer.Writer(ch, tempFiles)
+	ch := make(chan value.Info, 100)
+	wg.Add(1)
+	go writer.Writer(ch, tempFiles, wg)
 
 	for _, file := range input {
-		wg.Add(1)
 		func() {
-			err := fastcdc.FastCDC(file, ch, wg)
+			err := fastcdc.FastCDC(file, ch)
 			if err != nil {
 				fmt.Println("切割出错:", err)
 			}
 		}()
 	}
-	wg.Wait()
 	close(ch)
+	wg.Wait()
 	writer.Compress(output, tempFiles)
 	return nil
 }
