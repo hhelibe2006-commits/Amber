@@ -31,31 +31,31 @@ func Writer(ch chan value.Info, tempFiles *value.TempFiles, wg *sync.WaitGroup) 
 				ModTime:  c.ModTime(),
 				Mode:     c.Mode(),
 			}
-			file, err := os.Create(filepath.Join(fileDir, hash))
-			if err != nil {
-				fmt.Println(err)
-			}
-			func() {
-				gWriter := gzip.NewWriter(file)
-				defer func(gWriter *gzip.Writer) {
-					err := gWriter.Close()
-					if err != nil {
-						fmt.Println(err)
-					}
-				}(gWriter)
-				_, err = gWriter.Write(info.Value)
-				if err != nil {
-					return
-				}
-			}()
-			err = file.Close()
-			if err != nil {
-				return
-			}
 		}
 		if _, ok := ma[hash]; ok {
 			fileMa[info.Path].HashList = append(fileMa[info.Path].HashList, hash)
 			continue
+		}
+		file, err := os.Create(filepath.Join(fileDir, hash))
+		if err != nil {
+			fmt.Println(err)
+		}
+		func() {
+			gWriter := gzip.NewWriter(file)
+			defer func(gWriter *gzip.Writer) {
+				err := gWriter.Close()
+				if err != nil {
+					fmt.Println(err)
+				}
+			}(gWriter)
+			_, err = gWriter.Write(info.Value)
+			if err != nil {
+				return
+			}
+		}()
+		err = file.Close()
+		if err != nil {
+			return
 		}
 		ma[hash] = struct{}{}
 		fileMa[info.Path].HashList = append(fileMa[info.Path].HashList, hash)

@@ -37,6 +37,7 @@ func FastCDC(path string, ch chan value.Info) error {
 		if n == 0 {
 			info := new(value.Info)
 			info.Set(path, &u, sha256.Sum256(u), ch)
+			g.value = 0
 			break
 		}
 		for _, b := range by[:n] {
@@ -48,6 +49,7 @@ func FastCDC(path string, ch chan value.Info) error {
 			if g.value&(avg-1) == 0 || uint64(len(u)) > maxByte {
 				info := new(value.Info)
 				info.Set(path, &u, sha256.Sum256(u), ch)
+				g.value = 0
 			}
 		}
 	}
