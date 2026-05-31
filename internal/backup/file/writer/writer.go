@@ -1,6 +1,7 @@
 package writer
 
 import (
+	"bufio"
 	"compress/gzip"
 	"encoding/gob"
 	"fmt"
@@ -17,6 +18,7 @@ func Writer(ch chan value.Info, tempFiles *value.TempFiles) {
 		b int64
 	})
 	dateWrite := gzip.NewWriter(tempFiles.TempDate)
+	bufferedWriter := bufio.NewWriterSize(dateWrite, 16*1024*1024)
 	defer func(dateWrite *gzip.Writer) {
 		err := dateWrite.Close()
 		if err != nil {
@@ -47,7 +49,7 @@ func Writer(ch chan value.Info, tempFiles *value.TempFiles) {
 			fmt.Println("切片起始位置获取错误")
 			return
 		}
-		if _, err := dateWrite.Write(info.Value); err != nil {
+		if _, err := bufferedWriter.Write(info.Value); err != nil {
 			return
 		}
 		b, err := tempFiles.TempDate.Seek(0, io.SeekCurrent)

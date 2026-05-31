@@ -41,10 +41,11 @@ func Compress(output string, tempFiles *value.TempFiles) {
 			info, err := f.Stat()
 			header, err := zip.FileInfoHeader(info)
 			header.Method = zip.Store
-			header.Name, err = filepath.Abs(file)
+			name, err := filepath.Abs(file)
 			if err != nil {
 				fmt.Println(err)
 			}
+			header.Name = filepath.Base(name)
 			writer, err := zipWriter.CreateHeader(header)
 			if err != nil {
 				fmt.Println(err)

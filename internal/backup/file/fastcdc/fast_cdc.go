@@ -18,7 +18,7 @@ func FastCDC(path string, ch chan value.Info, wg *sync.WaitGroup) error {
 	g := NewGearHash()
 	g.value = 0
 	u := make([]byte, 0, maxByte)
-	by := make([]byte, 1024)
+	by := make([]byte, avg)
 	file, err := os.Open(path)
 	if err != nil {
 		fmt.Println("文件出错:", err)
