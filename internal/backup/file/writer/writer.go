@@ -1,12 +1,11 @@
 package writer
 
 import (
-	"compress/gzip"
 	"encoding/gob"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"os"
-	"path/filepath"
 	"sync"
 
 	"github.com/hhelibe2006-commits/Amber/internal/value"
@@ -15,8 +14,11 @@ import (
 func Writer(ch chan value.Info, tempFiles *value.TempFiles, wg *sync.WaitGroup) {
 	defer wg.Done()
 	fileMa := make(map[string]*value.File)
-	ma := make(map[string]struct{})
-	fileDir := tempFiles.TempDate
+	ma := make(map[string]struct {
+		a int64
+		b int64
+	})
+	dateFile := tempFiles.TempDate
 	for info := range ch {
 		hash := hex.EncodeToString(info.Hash[:])
 		if _, ok := fileMa[info.Path]; !ok {
@@ -36,28 +38,18 @@ func Writer(ch chan value.Info, tempFiles *value.TempFiles, wg *sync.WaitGroup) 
 			fileMa[info.Path].HashList = append(fileMa[info.Path].HashList, hash)
 			continue
 		}
-		file, err := os.Create(filepath.Join(fileDir, hash))
+		a, err := dateFile.Seek(0, io.SeekCurrent)
 		if err != nil {
 			fmt.Println(err)
 		}
-		func() {
-			gWriter := gzip.NewWriter(file)
-			defer func(gWriter *gzip.Writer) {
-				err := gWriter.Close()
-				if err != nil {
-					fmt.Println(err)
-				}
-			}(gWriter)
-			_, err = gWriter.Write(info.Value)
-			if err != nil {
-				return
-			}
-		}()
-		err = file.Close()
+		b, err := dateFile.Write(info.Value)
 		if err != nil {
 			return
 		}
-		ma[hash] = struct{}{}
+		ma[hash] = struct {
+			a int64
+			b int64
+		}{a: a, b: int64(b)}
 		fileMa[info.Path].HashList = append(fileMa[info.Path].HashList, hash)
 	}
 	write := gob.NewEncoder(tempFiles.TempHash)
