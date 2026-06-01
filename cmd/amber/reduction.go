@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/hhelibe2006-commits/Amber/internal/reduction"
 	"github.com/spf13/cobra"
 )
 
@@ -14,6 +15,9 @@ func init() {
 		Use:   "restore",
 		Short: "执行还原",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := reduction.Run(input); err != nil {
+				return err
+			}
 			return nil
 		},
 	}
