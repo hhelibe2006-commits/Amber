@@ -31,8 +31,8 @@ func BackupFile(input []string, output string) error {
 			}
 		}(uv)
 	}
-	close(ch)
 	uv.Wait()
+	close(ch)
 	wg.Wait()
 	writer.Compress(output, tempFiles)
 	return nil
