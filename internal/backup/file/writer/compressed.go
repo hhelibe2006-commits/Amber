@@ -1,7 +1,7 @@
 package writer
 
 import (
-	"archive/tar"
+	"archive/zip"
 	"fmt"
 	"os"
 
@@ -22,8 +22,8 @@ func Compress(output string, tempFiles *value.TempFiles) {
 		}
 	}(zipFile)
 
-	tarWriter := tar.NewWriter(zipFile)
-	defer func(zipWriter *tar.Writer) {
+	tarWriter := zip.NewWriter(zipFile)
+	defer func(zipWriter *zip.Writer) {
 		err := zipWriter.Close()
 		if err != nil {
 			fmt.Println(err)

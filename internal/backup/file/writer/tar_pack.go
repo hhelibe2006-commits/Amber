@@ -1,13 +1,13 @@
 package writer
 
 import (
-	"archive/tar"
+	"archive/zip"
 	"fmt"
 	"io"
 	"os"
 )
 
-func TarPack(file string, tarWriter *tar.Writer) {
+func TarPack(file string, tarWriter *zip.Writer) {
 	f, err := os.Open(file)
 	if err != nil {
 		fmt.Println(err)
@@ -22,15 +22,15 @@ func TarPack(file string, tarWriter *tar.Writer) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	header, err := tar.FileInfoHeader(info, info.Name())
+	header, err := zip.FileInfoHeader(info)
 	if err != nil {
 		fmt.Println(err)
 	}
-	err = tarWriter.WriteHeader(header)
+	z, err := tarWriter.CreateHeader(header)
 	if err != nil {
 		return
 	}
-	_, err = io.Copy(tarWriter, f)
+	_, err = io.Copy(z, f)
 	if err != nil {
 		fmt.Println(err)
 	}
