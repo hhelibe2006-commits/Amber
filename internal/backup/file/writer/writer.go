@@ -12,11 +12,12 @@ import (
 
 func Writer(ch chan value.Info, tempFiles *value.TempFiles, wg *sync.WaitGroup, size int) {
 	defer wg.Done()
+	mc := make(map[int64]struct{})
 	fileMa := make(map[string]*value.File, size)
 	ma := make(map[[32]byte]struct {
 		A int64
 		B int64
-	}, 1000*size)
+	}, 1600*size)
 	dateFile := tempFiles.TempDate
 	for info := range ch {
 		hash := info.Hash
@@ -24,7 +25,6 @@ func Writer(ch chan value.Info, tempFiles *value.TempFiles, wg *sync.WaitGroup, 
 			c, err := os.Stat(info.Path)
 			if err != nil {
 				fmt.Println("文件信息获取错误:", err)
-				return
 			}
 			fileMa[info.Path] = &value.File{
 				HashList: make([][32]byte, 0, 1),
@@ -41,9 +41,18 @@ func Writer(ch chan value.Info, tempFiles *value.TempFiles, wg *sync.WaitGroup, 
 		if err != nil {
 			fmt.Println(err)
 		}
-		b, err := dateFile.Write(info.Value)
+		if _, ok := mc[a]; ok {
+			fmt.Println(a)
+		} else {
+			mc[a] = struct{}{}
+		}
+		va, err := GzipCompress(info.Value)
 		if err != nil {
-			return
+			fmt.Println(err)
+		}
+		b, err := dateFile.Write(va)
+		if err != nil {
+			fmt.Println(err)
 		}
 		ma[hash] = struct {
 			A int64

@@ -11,7 +11,7 @@ import (
 
 func FastCDC(path string, ch chan value.Info) error {
 	fmt.Println("正在备份", path)
-	avg := uint64(1 << 14)
+	avg := uint64(1 << 16)
 	maxByte, minByte := avg*4, avg/4
 	g := NewGearHash()
 	g.value = 0

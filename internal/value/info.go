@@ -9,7 +9,7 @@ type Info struct {
 func (i *Info) Set(path string, value *[]byte, hash [32]byte, ch chan Info) {
 	i.Path = path
 	i.Hash = hash
-	i.Value = *value
+	i.Value = (*value)[:len(*value):len(*value)]
 	ch <- *i
 	*value = (*value)[:0]
 }
