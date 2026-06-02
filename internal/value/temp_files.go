@@ -1,6 +1,7 @@
 package value
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -41,17 +42,20 @@ func NewTempFiles() *TempFiles {
 }
 
 func (tempFiles *TempFiles) Close() {
+	if err := tempFiles.TempDate.Close(); err != nil {
+		fmt.Print("date", err)
+	}
 	if err := tempFiles.TempHash.Close(); err != nil {
-		return
+		fmt.Print("hash", err)
 	}
 	if err := tempFiles.TempFile.Close(); err != nil {
-		return
+		fmt.Print("file", err)
 	}
 }
 
 func (tempFiles *TempFiles) Remove() {
 	if err := os.RemoveAll(tempFiles.tempDir); err != nil {
-		return
+		fmt.Print("remove", err)
 	}
 }
 

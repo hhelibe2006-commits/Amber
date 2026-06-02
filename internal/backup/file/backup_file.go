@@ -15,10 +15,10 @@ func BackupFile(input []string, output string) error {
 	defer tempFiles.Remove()
 	uv := new(sync.WaitGroup)
 	wg := new(sync.WaitGroup)
-	ch := make(chan value.Info, 1000)
+	ch := make(chan value.Info, 100)
 	wg.Add(1)
-	go writer.Writer(ch, tempFiles, wg)
-	dc := make(chan struct{}, 3)
+	go writer.Writer(ch, tempFiles, wg, len(input))
+	dc := make(chan struct{}, 2)
 	for _, file := range input {
 		uv.Add(1)
 		go func(wg *sync.WaitGroup) {

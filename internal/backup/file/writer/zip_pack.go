@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-func TarPack(file string, tarWriter *zip.Writer) {
+func ZipPack(file string, zipWriter *zip.Writer) {
 	f, err := os.Open(file)
 	if err != nil {
 		fmt.Println(err)
@@ -26,7 +26,8 @@ func TarPack(file string, tarWriter *zip.Writer) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	z, err := tarWriter.CreateHeader(header)
+	header.Method = zip.Store
+	z, err := zipWriter.CreateHeader(header)
 	if err != nil {
 		return
 	}

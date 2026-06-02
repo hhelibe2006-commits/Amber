@@ -22,14 +22,14 @@ func Compress(output string, tempFiles *value.TempFiles) {
 		}
 	}(zipFile)
 
-	tarWriter := zip.NewWriter(zipFile)
+	zipWriter := zip.NewWriter(zipFile)
 	defer func(zipWriter *zip.Writer) {
 		err := zipWriter.Close()
 		if err != nil {
 			fmt.Println(err)
 		}
-	}(tarWriter)
+	}(zipWriter)
 	for _, file := range fileList {
-		TarPack(file, tarWriter)
+		ZipPack(file, zipWriter)
 	}
 }

@@ -2,7 +2,6 @@ package writer
 
 import (
 	"encoding/gob"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
@@ -11,16 +10,16 @@ import (
 	"github.com/hhelibe2006-commits/Amber/internal/value"
 )
 
-func Writer(ch chan value.Info, tempFiles *value.TempFiles, wg *sync.WaitGroup) {
+func Writer(ch chan value.Info, tempFiles *value.TempFiles, wg *sync.WaitGroup, size int) {
 	defer wg.Done()
-	fileMa := make(map[string]*value.File)
-	ma := make(map[string]struct {
-		a int64
-		b int64
-	})
+	fileMa := make(map[string]*value.File, size)
+	ma := make(map[[32]byte]struct {
+		A int64
+		B int64
+	}, 1000*size)
 	dateFile := tempFiles.TempDate
 	for info := range ch {
-		hash := hex.EncodeToString(info.Hash[:])
+		hash := info.Hash
 		if _, ok := fileMa[info.Path]; !ok {
 			c, err := os.Stat(info.Path)
 			if err != nil {
@@ -28,7 +27,7 @@ func Writer(ch chan value.Info, tempFiles *value.TempFiles, wg *sync.WaitGroup) 
 				return
 			}
 			fileMa[info.Path] = &value.File{
-				HashList: make([]string, 0, 1),
+				HashList: make([][32]byte, 0, 1),
 				Path:     info.Path,
 				ModTime:  c.ModTime(),
 				Mode:     c.Mode(),
@@ -47,18 +46,18 @@ func Writer(ch chan value.Info, tempFiles *value.TempFiles, wg *sync.WaitGroup) 
 			return
 		}
 		ma[hash] = struct {
-			a int64
-			b int64
-		}{a: a, b: int64(b)}
+			A int64
+			B int64
+		}{A: a, B: int64(b)}
 		fileMa[info.Path].HashList = append(fileMa[info.Path].HashList, hash)
 	}
 	write := gob.NewEncoder(tempFiles.TempHash)
 
 	if err := write.Encode(ma); err != nil {
-		return
+		fmt.Println("哈希编码错误", err)
 	}
 	write = gob.NewEncoder(tempFiles.TempFile)
 	if err := write.Encode(fileMa); err != nil {
-		return
+		fmt.Println("文件编码错误:", err)
 	}
 }

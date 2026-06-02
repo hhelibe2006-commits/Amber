@@ -7,7 +7,7 @@ import (
 
 type File struct {
 	Path     string
-	HashList []string
+	HashList [][32]byte
 	Mode     os.FileMode
 	ModTime  time.Time
 }
