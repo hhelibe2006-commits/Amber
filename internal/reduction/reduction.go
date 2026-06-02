@@ -20,6 +20,9 @@ func Run(input string) error {
 	if err != nil {
 		return err
 	}
-	println(typ)
+	switch typ {
+	case "file":
+
+	}
 	return nil
 }
