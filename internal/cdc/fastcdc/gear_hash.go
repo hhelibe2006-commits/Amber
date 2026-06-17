@@ -7,11 +7,11 @@ type GearHash struct {
 	Gear  [256]uint64
 }
 
-func (g *GearHash) Next(value byte) {
+func (g *GearHash) next(value byte) {
 	g.value = g.Gear[value] + (g.value << 1)
 }
 
-func NewGearHash() *GearHash {
+func newGearHash() *GearHash {
 	g := new(GearHash)
 	r := rand.New(rand.NewPCG(0, 0))
 	g.value = 0
