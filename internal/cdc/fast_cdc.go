@@ -16,8 +16,9 @@ func NewFastCdc(file *os.File) Cdc {
 	g.avg = uint64(1 << 13)
 	g.maxByte = g.avg * 4
 	g.minByte = g.avg / 4
-	g.gearHash = newGearHash()
+	g.gearHash = NewGearHash()
 	g.file = file
+	g.by = make([]byte, g.avg)
 	return g
 }
 
@@ -28,27 +29,27 @@ type FastCdc struct {
 	maxByte  uint64
 	minByte  uint64
 	u        []byte
+	by       []byte
 }
 
 func (g *FastCdc) Next() ([]byte, error) {
-	by := make([]byte, g.avg)
 	for {
-		n, err := g.file.Read(by)
+		n, err := g.file.Read(g.by)
 		if err != nil && err != io.EOF {
 			fmt.Println("文件读取出错:", err)
 			return nil, err
 		} else if n == 0 {
 			break
 		} else if err == io.EOF {
-			return append(g.u, by[:n]...), err
+			return append(g.u, g.by[:n]...), err
 		}
-		for _, b := range by[:n] {
+		var t int
+		for _, b := range g.by[:n] {
 			g.gearHash.next(b)
 			g.u = append(g.u, b)
 			if uint64(len(g.u)) < g.minByte {
 				continue
 			}
-			var t int
 			if uint64(len(g.u)) > g.avg {
 				t = 2
 			}
