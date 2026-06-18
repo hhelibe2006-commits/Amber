@@ -1,4 +1,4 @@
-package fastcdc
+package cdc
 
 import "math/rand/v2"
 
