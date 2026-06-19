@@ -71,13 +71,17 @@ func (cdc *FastCdc) Next() ([]byte, error) {
 }
 
 func (cdc *FastCdc) processBytes(data []byte) bool {
+	var t int
 	for i, b := range data {
 		cdc.chunk = append(cdc.chunk, b)
 		cdc.gearHash.Next(b)
 		if uint64(len(cdc.chunk)) < cdc.minBlockSize {
 			continue
 		}
-		if cdc.gearHash.Check(cdc.avgBlockSize-1) || uint64(len(cdc.chunk)) == cdc.maxBlockSize {
+		if uint64(i) > cdc.avgBlockSize {
+			t = 2
+		}
+		if cdc.gearHash.Check((cdc.avgBlockSize-1)>>t) || uint64(len(cdc.chunk)) == cdc.maxBlockSize {
 			cdc.rest = append([]byte{}, data[i+1:]...)
 			return true
 		}
