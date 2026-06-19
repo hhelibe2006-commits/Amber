@@ -3,6 +3,8 @@ package cdc
 import (
 	"io"
 	"os"
+
+	"github.com/hhelibe2006-commits/Amber/internal/cdc/hash"
 )
 
 func init() {
@@ -10,7 +12,7 @@ func init() {
 }
 
 type FastCdc struct {
-	gearHash *GearHash
+	gearHash *hash.GearHash
 	file     *os.File
 
 	avgBlockSize uint64
@@ -22,9 +24,9 @@ type FastCdc struct {
 	rest    []byte
 }
 
-func NewFastCdc(file *os.File) Cdc {
+func NewFastCdc(file *os.File) CDC {
 	cdc := new(FastCdc)
-	cdc.gearHash = NewGearHash()
+	cdc.gearHash = hash.NewGearHash()
 	cdc.file = file
 
 	cdc.avgBlockSize = uint64(1 << 13)
@@ -71,12 +73,12 @@ func (cdc *FastCdc) Next() ([]byte, error) {
 func (cdc *FastCdc) processBytes(data []byte) bool {
 	for i, b := range data {
 		cdc.chunk = append(cdc.chunk, b)
-		cdc.gearHash.next(b)
+		cdc.gearHash.Next(b)
 		if uint64(len(cdc.chunk)) < cdc.minBlockSize {
 			continue
 		}
-		if cdc.gearHash.value&(cdc.avgBlockSize-1) == 0 || uint64(len(cdc.chunk)) == cdc.maxBlockSize {
-			cdc.rest = append([]byte(nil), data[i+1:]...)
+		if cdc.gearHash.Check(cdc.avgBlockSize-1) || uint64(len(cdc.chunk)) == cdc.maxBlockSize {
+			cdc.rest = append([]byte{}, data[i+1:]...)
 			return true
 		}
 	}

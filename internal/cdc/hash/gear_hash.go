@@ -1,5 +1,6 @@
-package cdc
+package hash
 
+// gear 是通过随机数生成器生成的256个随机数
 var gear = [256]uint64{
 	4107282207882862730,
 	12464933722704884221,
@@ -263,7 +264,7 @@ type GearHash struct {
 	value uint64
 }
 
-func (g *GearHash) next(value byte) {
+func (g *GearHash) Next(value byte) {
 	g.value = gear[value] + (g.value << 1)
 }
 
@@ -275,4 +276,8 @@ func NewGearHash() *GearHash {
 
 func (g *GearHash) Reset() {
 	g.value = 0
+}
+
+func (g *GearHash) Check(mask uint64) bool {
+	return (mask & g.value) == 0
 }
