@@ -1,7 +1,6 @@
 package cdc
 
 import (
-	"fmt"
 	"io"
 	"os"
 )
@@ -10,59 +9,81 @@ func init() {
 	Add("fastcdc", NewFastCdc)
 }
 
-func NewFastCdc(file *os.File) Cdc {
-	g := new(FastCdc)
-	g.u = make([]byte, 0, g.maxByte)
-	g.avg = uint64(1 << 13)
-	g.maxByte = g.avg * 4
-	g.minByte = g.avg / 4
-	g.gearHash = NewGearHash()
-	g.file = file
-	g.by = make([]byte, g.avg)
-	return g
-}
-
 type FastCdc struct {
 	gearHash *GearHash
 	file     *os.File
-	avg      uint64
-	maxByte  uint64
-	minByte  uint64
-	u        []byte
-	by       []byte
+
+	avgBlockSize uint64
+	maxBlockSize uint64
+	minBlockSize uint64
+
+	chunk   []byte
+	readBuf []byte
+	rest    []byte
 }
 
-func (g *FastCdc) Next() ([]byte, error) {
+func NewFastCdc(file *os.File) Cdc {
+	cdc := new(FastCdc)
+	cdc.gearHash = NewGearHash()
+	cdc.file = file
+
+	cdc.avgBlockSize = uint64(1 << 13)
+	cdc.maxBlockSize = cdc.avgBlockSize * 4
+	cdc.minBlockSize = cdc.avgBlockSize / 4
+
+	cdc.chunk = make([]byte, 0, cdc.maxBlockSize)
+	cdc.readBuf = make([]byte, cdc.avgBlockSize)
+	cdc.rest = make([]byte, 0)
+	return cdc
+}
+
+func (cdc *FastCdc) Next() ([]byte, error) {
+	var err error
+	var n int
 	for {
-		n, err := g.file.Read(g.by)
-		if err != nil && err != io.EOF {
-			fmt.Println("文件读取出错:", err)
-			return nil, err
-		} else if n == 0 {
+		if cdc.processBytes(cdc.rest) {
 			break
-		} else if err == io.EOF {
-			return append(g.u, g.by[:n]...), err
 		}
-		var t int
-		for _, b := range g.by[:n] {
-			g.gearHash.next(b)
-			g.u = append(g.u, b)
-			if uint64(len(g.u)) < g.minByte {
-				continue
-			}
-			if uint64(len(g.u)) > g.avg {
-				t = 2
-			}
-			if g.gearHash.value&((g.avg-1)>>t) == 0 || uint64(len(g.u)) > g.maxByte {
-				g.gearHash.value = 0
-				break
-			}
+		cdc.rest = make([]byte, 0)
+		n, err = cdc.file.Read(cdc.readBuf)
+		if err != nil && err != io.EOF {
+			break
 		}
-		if g.gearHash.value == 0 {
+		if cdc.processBytes(cdc.readBuf[:n]) {
+			break
+		}
+		if err == io.EOF {
 			break
 		}
 	}
-	u := g.u[:len(g.u)]
-	g.u = g.u[:0]
-	return u, nil
+	c := make([]byte, len(cdc.chunk))
+	copy(c, cdc.chunk[:len(cdc.chunk)])
+	cdc.reset()
+	if err != nil && err != io.EOF {
+		return nil, err
+	}
+	if len(cdc.rest) == 0 && err == io.EOF {
+		return c, err
+	}
+	return c, nil
+}
+
+func (cdc *FastCdc) processBytes(data []byte) bool {
+	for i, b := range data {
+		cdc.chunk = append(cdc.chunk, b)
+		cdc.gearHash.next(b)
+		if uint64(len(cdc.chunk)) < cdc.minBlockSize {
+			continue
+		}
+		if cdc.gearHash.value&(cdc.avgBlockSize-1) == 0 || uint64(len(cdc.chunk)) == cdc.maxBlockSize {
+			cdc.rest = append([]byte(nil), data[i+1:]...)
+			return true
+		}
+	}
+	return false
+}
+
+func (cdc *FastCdc) reset() {
+	cdc.gearHash.Reset()
+	cdc.chunk = cdc.chunk[:0]
 }

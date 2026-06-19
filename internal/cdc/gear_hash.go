@@ -1,6 +1,6 @@
 package cdc
 
-var u = [256]uint64{
+var gear = [256]uint64{
 	4107282207882862730,
 	12464933722704884221,
 	6335497120186221275,
@@ -261,16 +261,18 @@ var u = [256]uint64{
 
 type GearHash struct {
 	value uint64
-	Gear  [256]uint64
 }
 
 func (g *GearHash) next(value byte) {
-	g.value = g.Gear[value] + (g.value << 1)
+	g.value = gear[value] + (g.value << 1)
 }
 
 func NewGearHash() *GearHash {
 	g := new(GearHash)
-	g.Gear = u
 	g.value = 0
 	return g
+}
+
+func (g *GearHash) Reset() {
+	g.value = 0
 }
