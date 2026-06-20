@@ -1,7 +1,6 @@
 package cdc
 
 import (
-	"io"
 	"os"
 
 	"github.com/hhelibe2006-commits/Amber/internal/cdc/hash"
@@ -11,21 +10,14 @@ func init() {
 	Add("fastcdc", NewFastCdc)
 }
 
-type FastCdc struct {
+type FastCDC struct {
+	*HashCDC
 	gearHash *hash.GearHash
-	file     *os.File
-
-	avgBlockSize uint64
-	maxBlockSize uint64
-	minBlockSize uint64
-
-	chunk   []byte
-	readBuf []byte
-	rest    []byte
 }
 
 func NewFastCdc(file *os.File) CDC {
-	cdc := new(FastCdc)
+	cdc := new(FastCDC)
+	cdc.HashCDC = new(HashCDC)
 	cdc.gearHash = hash.NewGearHash()
 	cdc.file = file
 
@@ -39,38 +31,7 @@ func NewFastCdc(file *os.File) CDC {
 	return cdc
 }
 
-func (cdc *FastCdc) Next() ([]byte, error) {
-	var err error
-	var n int
-	for {
-		if cdc.processBytes(cdc.rest) {
-			break
-		}
-		cdc.rest = make([]byte, 0)
-		n, err = cdc.file.Read(cdc.readBuf)
-		if err != nil && err != io.EOF {
-			break
-		}
-		if cdc.processBytes(cdc.readBuf[:n]) {
-			break
-		}
-		if err == io.EOF {
-			break
-		}
-	}
-	c := make([]byte, len(cdc.chunk))
-	copy(c, cdc.chunk[:len(cdc.chunk)])
-	cdc.reset()
-	if err != nil && err != io.EOF {
-		return nil, err
-	}
-	if len(cdc.rest) == 0 && err == io.EOF {
-		return c, err
-	}
-	return c, nil
-}
-
-func (cdc *FastCdc) processBytes(data []byte) bool {
+func (cdc *FastCDC) processBytes(data []byte) bool {
 	var t int
 	for i, b := range data {
 		cdc.chunk = append(cdc.chunk, b)
@@ -78,7 +39,7 @@ func (cdc *FastCdc) processBytes(data []byte) bool {
 		if uint64(len(cdc.chunk)) < cdc.minBlockSize {
 			continue
 		}
-		if uint64(i) > cdc.avgBlockSize {
+		if uint64(len(cdc.chunk)) > cdc.avgBlockSize {
 			t = 2
 		}
 		if cdc.gearHash.Check((cdc.avgBlockSize-1)>>t) || uint64(len(cdc.chunk)) == cdc.maxBlockSize {
@@ -89,7 +50,7 @@ func (cdc *FastCdc) processBytes(data []byte) bool {
 	return false
 }
 
-func (cdc *FastCdc) reset() {
+func (cdc *FastCDC) reset() {
 	cdc.gearHash.Reset()
 	cdc.chunk = cdc.chunk[:0]
 }

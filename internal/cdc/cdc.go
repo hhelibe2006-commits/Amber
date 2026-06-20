@@ -1,6 +1,8 @@
 package cdc
 
-import "os"
+import (
+	"os"
+)
 
 var pr = map[string]func(file *os.File) CDC{}
 
