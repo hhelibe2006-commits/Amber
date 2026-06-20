@@ -19,13 +19,16 @@ func NewRabinCDC(file *os.File) CDC {
 	rabinCDC := new(RabinCDC)
 	rabinCDC.HashCDC = new(HashCDC)
 	rabinCDC.proc = rabinCDC
+
 	rabinCDC.minBlockSize = 1 << 10
 	rabinCDC.maxBlockSize = 1 << 18
 	rabinCDC.avgBlockSize = 1 << 12
+
 	rabinCDC.file = file
 	rabinCDC.chunk = make([]byte, 0, rabinCDC.maxBlockSize)
 	rabinCDC.readBuf = make([]byte, rabinCDC.avgBlockSize)
 	rabinCDC.rest = make([]byte, 0)
+
 	rabinCDC.rabinHash = hash.NewRabinHash()
 	return rabinCDC
 }
