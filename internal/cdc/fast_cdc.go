@@ -18,6 +18,7 @@ type FastCDC struct {
 func NewFastCdc(file *os.File) CDC {
 	cdc := new(FastCDC)
 	cdc.HashCDC = new(HashCDC)
+	cdc.proc = cdc
 	cdc.gearHash = hash.NewGearHash()
 	cdc.file = file
 

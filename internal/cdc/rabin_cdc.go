@@ -18,6 +18,7 @@ type RabinCDC struct {
 func NewRabinCDC(file *os.File) CDC {
 	rabinCDC := new(RabinCDC)
 	rabinCDC.HashCDC = new(HashCDC)
+	rabinCDC.proc = rabinCDC
 	rabinCDC.minBlockSize = 1 << 10
 	rabinCDC.maxBlockSize = 1 << 18
 	rabinCDC.avgBlockSize = 1 << 12
