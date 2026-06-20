@@ -4,27 +4,30 @@ import (
 	"fmt"
 
 	"github.com/hhelibe2006-commits/Amber/internal/backup/file"
+	"github.com/hhelibe2006-commits/Amber/internal/value"
 )
 
-func Run(typ string, input []string, output string) error {
-	switch typ {
+func Run(clas *value.Clas) error {
+	switch clas.Typ {
 	case "file":
 		fmt.Println("校验路径中")
-		if err := file.PathValidation(input, output); err != nil {
+		if err := file.PathValidation(clas.Input, clas.Output); err != nil {
 			fmt.Println("校验错误:", err)
 			return err
 		}
 		fmt.Println("获取文件中")
-		fileList, err := file.ListDir(input)
+		fileList, err := file.ListDir(clas.Input)
 		if err != nil {
 			fmt.Println("获取文件错误:", err)
 			return err
 		}
-		err = file.BackupFile(fileList, output)
+		err = file.BackupFile(fileList, clas.Output)
 		if err != nil {
 			fmt.Println("备份出错:", err)
 			return err
 		}
+	default:
+		return fmt.Errorf("无此类型")
 	}
 	return nil
 }

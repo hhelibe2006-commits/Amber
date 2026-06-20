@@ -9,8 +9,7 @@ import (
 )
 
 func init() {
-	var input value.PathList
-	var output string
+	clas := value.NewClas()
 
 	// 备份命令
 	var backupCmd = &cobra.Command{
@@ -18,11 +17,10 @@ func init() {
 		Short: "执行备份",
 		//RunE会返回错误，而Run不会，所以使用RunE
 		RunE: func(cmd *cobra.Command, args []string) error {
-			typ, err := cmd.Flags().GetString("type")
-			if err != nil {
+			if err := clas.Set(cmd); err != nil {
 				return err
 			}
-			if err := backup.Run(typ, input, output); err != nil {
+			if err := backup.Run(clas); err != nil {
 				fmt.Println("备份出现错误:", err)
 				return err
 			}
@@ -31,8 +29,8 @@ func init() {
 	}
 	rootCmd.AddCommand(backupCmd)
 
-	backupCmd.Flags().VarP(&input, "input", "i", "输入路径")
-	backupCmd.Flags().StringVarP(&output, "output", "o", "", "输出路径")
+	backupCmd.Flags().VarP(&clas.Input, "input", "i", "输入路径")
+	backupCmd.Flags().StringVarP(&clas.Output, "output", "o", "", "输出路径")
 
 	//确保有输出路径
 	if err := backupCmd.MarkFlagRequired("output"); err != nil {
