@@ -17,9 +17,6 @@ func init() {
 		Short: "执行备份",
 		//RunE会返回错误，而Run不会，所以使用RunE
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := clas.Set(cmd); err != nil {
-				return err
-			}
 			if err := backup.Run(clas); err != nil {
 				fmt.Println("备份出现错误:", err)
 				return err
@@ -31,6 +28,10 @@ func init() {
 
 	backupCmd.Flags().VarP(&clas.Input, "input", "i", "输入路径")
 	backupCmd.Flags().StringVarP(&clas.Output, "output", "o", "", "输出路径")
+	//有fastcdc，rabincdc
+	backupCmd.Flags().StringVarP(&clas.Cdc, "cdc", "c", "fastcdc", "CDC算法")
+	//有file、system、disk三种备份方式，默认file
+	backupCmd.Flags().StringVarP(&clas.Typ, "type", "t", "file", "备份类型")
 
 	//确保有输出路径
 	if err := backupCmd.MarkFlagRequired("output"); err != nil {
@@ -43,6 +44,5 @@ func init() {
 		fmt.Println("初始化出现错误:", err)
 		return
 	}
-	//有file、system、disk三种备份方式，默认file
-	backupCmd.Flags().StringP("type", "t", "file", "备份类型")
+
 }

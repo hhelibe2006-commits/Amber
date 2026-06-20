@@ -8,12 +8,13 @@ import (
 
 type TempFiles struct {
 	tempDir  string
+	TempInfo *os.File //备份信息
 	TempDate *os.File //数据的存放位置
 	TempHash *os.File //哈希与位置的对应关系
 	TempFile *os.File //文件相关信息
 }
 
-func NewTempFiles() *TempFiles {
+func NewTempFiles() (*TempFiles, error) {
 	tempFiles := new(TempFiles)
 	var err error
 	tempFiles.tempDir, err = os.MkdirTemp("", "*")
@@ -21,24 +22,30 @@ func NewTempFiles() *TempFiles {
 		panic(err)
 	}
 
+	infoPath := filepath.Join(tempFiles.tempDir, "info")
+	tempFiles.TempInfo, err = os.Create(infoPath)
+	if err != nil {
+		return nil, err
+	}
+
 	datePath := filepath.Join(tempFiles.tempDir, "date")
 	tempFiles.TempDate, err = os.Create(datePath)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	hashPath := filepath.Join(tempFiles.tempDir, "hash")
 	tempFiles.TempHash, err = os.Create(hashPath)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	filePath := filepath.Join(tempFiles.tempDir, "file")
 	tempFiles.TempFile, err = os.Create(filePath)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return tempFiles
+	return tempFiles, nil
 }
 
 func (tempFiles *TempFiles) Close() {
@@ -60,7 +67,8 @@ func (tempFiles *TempFiles) Remove() {
 }
 
 func (tempFiles *TempFiles) FileList() []string {
-	fileList := make([]string, 0, 3)
+	fileList := make([]string, 0, 4)
+	fileList = append(fileList, tempFiles.TempInfo.Name())
 	fileList = append(fileList, tempFiles.TempFile.Name())
 	fileList = append(fileList, tempFiles.TempDate.Name())
 	fileList = append(fileList, tempFiles.TempHash.Name())

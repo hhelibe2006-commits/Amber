@@ -7,22 +7,39 @@ import (
 	"sync"
 
 	"github.com/hhelibe2006-commits/Amber/internal/backup/file/writer"
-	"github.com/hhelibe2006-commits/Amber/internal/cdc"
 	"github.com/hhelibe2006-commits/Amber/internal/value"
+	"github.com/hhelibe2006-commits/Amber/pkg/cdc"
 )
 
-func BackupFile(input []string, output string) error {
-	tempFiles := value.NewTempFiles()
+func BackupFile(clas *value.Clas) error {
+	tempFiles, err := value.NewTempFiles()
+	if err != nil {
+		return err
+	}
 	defer tempFiles.Close()
 	defer tempFiles.Remove()
+	wg := new(sync.WaitGroup)
+	CDC := cdc.NewCDC(clas.Cdc)
+	cDC(tempFiles, wg, clas.Input, CDC)
+	wg.Wait()
+	writer.Compress(clas.Output, tempFiles)
+	return nil
+}
+
+func cDC(tempFiles *value.TempFiles, wg *sync.WaitGroup, input []string, CDC func(file *os.File) cdc.CDC) {
 	fileMa := make(map[string]*value.File, len(input))
 	ma := make(map[[32]byte]*struct {
 		A int64
 		B int64
 	})
-	var mu sync.Mutex
-	wg := new(sync.WaitGroup)
+	var mu *sync.Mutex
 	dc := make(chan struct{}, 2)
+	for _, file := range input {
+		var err error
+		if fileMa[file], err = value.NewFile(file); err != nil {
+			return
+		}
+	}
 	for _, file := range input {
 		wg.Add(1)
 		go func() {
@@ -39,54 +56,51 @@ func BackupFile(input []string, output string) error {
 
 				}
 			}(f)
-			fu := cdc.NewCDC("fastcdc")
-			CDC := fu(f)
+			d := CDC(f)
 			for {
-				by, err := CDC.Next()
+				by, err := d.Next()
 				if err != nil {
-					break
+					if err != io.EOF {
+						return
+					}
+					return
 				}
 				hash := sha256.Sum256(by)
-				if _, ok := fileMa[file]; ok {
-					c, err := os.Stat(file)
-					if err != nil {
-
-					}
-					fileMa[file] = &value.File{
-						HashList: make([][32]byte, 0, 1),
-						Path:     file,
-						Mode:     c.Mode(),
-						ModTime:  c.ModTime(),
-					}
-				}
 				mu.Lock()
+				fileMa[file].HashList = append(fileMa[file].HashList, hash)
 				if _, ok := ma[hash]; ok {
-					fileMa[file].HashList = append(fileMa[file].HashList, hash)
 					mu.Unlock()
 					continue
 				}
-				a, err := tempFiles.TempDate.Seek(0, io.SeekCurrent)
+				err = writerFile(&ma, tempFiles.TempDate, by, &hash)
 				if err != nil {
+					return
 				}
-				ma[hash] = &struct {
-					A int64
-					B int64
-				}{A: a, B: 0}
-				mu.Unlock()
-				fileMa[file].HashList = append(fileMa[file].HashList, hash)
-				va, err := writer.GzipCompress(by)
-				if err != nil {
-				}
-				b, err := tempFiles.TempDate.Write(va)
-				if err != nil {
-				}
-				mu.Lock()
-				ma[hash].B = int64(b)
 				mu.Unlock()
 			}
 		}()
 	}
-	wg.Wait()
-	writer.Compress(output, tempFiles)
+}
+
+func writerFile(ma *map[[32]byte]*struct {
+	A int64
+	B int64
+}, tempDate *os.File, by []byte, hash *[32]byte) error {
+	a, err := tempDate.Seek(0, io.SeekCurrent)
+	if err != nil {
+		return err
+	}
+	va, err := writer.GzipCompress(by)
+	if err != nil {
+		return err
+	}
+	b, err := tempDate.Write(va)
+	if err != nil {
+		return err
+	}
+	(*ma)[*hash] = &struct {
+		A int64
+		B int64
+	}{A: a, B: int64(b)}
 	return nil
 }

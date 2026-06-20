@@ -3,7 +3,7 @@ package cdc
 import (
 	"os"
 
-	"github.com/hhelibe2006-commits/Amber/internal/cdc/hash"
+	"github.com/hhelibe2006-commits/Amber/pkg/cdc/hash"
 )
 
 func init() {
