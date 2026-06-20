@@ -2,7 +2,7 @@ package hash
 
 import "container/list"
 
-var pop = [256]uint64{
+var powTable = [256]uint64{
 	0,
 	13725430613427699457,
 	9004117153145847298,
@@ -284,7 +284,7 @@ func (h *RabinHash) Next(value byte) {
 	if h.w == uint64(h.windows.Len()) {
 		back := h.windows.Back()
 		if back != nil {
-			h.value = (h.value-pop[back.Value.(byte)])*h.p + uint64(value)
+			h.value = (h.value-powTable[back.Value.(byte)])*h.p + uint64(value)
 			h.windows.Remove(h.windows.Back())
 			h.windows.PushFront(value)
 		}
