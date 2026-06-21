@@ -53,18 +53,22 @@ func chunkFiles(tempFiles *value.TempFiles, input openfile.OpenFile, CDC func(fi
 			d := CDC(file)
 			for {
 				if err = handleChunk(d, fileMap, file, tempFiles); err != nil {
-					errChan <- err
+					if err != io.EOF {
+						errChan <- err
+					}
+					return
 				}
 			}
 		}()
 	}
 	errList := make([]error, 0)
-	for range len(input) {
-		if err = <-errChan; err != nil {
+	go func() {
+		for err := range errChan {
 			errList = append(errList, err)
 		}
-	}
+	}()
 	wg.Wait()
+	close(errChan)
 	Writer(fileMap, tempFiles)
 	return errors.Join(errList...)
 }
@@ -72,9 +76,6 @@ func chunkFiles(tempFiles *value.TempFiles, input openfile.OpenFile, CDC func(fi
 func handleChunk(d cdc.CDC, fileMap *ChunkIndex, file *os.File, tempFiles *value.TempFiles) error {
 	by, err := d.Next()
 	if err != nil {
-		if err != io.EOF {
-			return err
-		}
 		return err
 	}
 	hash := sha256.Sum256(by)
