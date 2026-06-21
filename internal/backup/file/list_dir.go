@@ -1,28 +1,13 @@
 package file
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
+	"github.com/hhelibe2006-commits/Amber/internal/value/openfile"
 )
 
-func ListDir(path []string) ([]string, error) {
-	fileList := make([]string, 0, len(path))
-	for _, file := range path {
-		err := filepath.Walk(file, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			if info.IsDir() {
-				return nil
-			}
-			fmt.Println(path)
-			fileList = append(fileList, path)
-			return nil
-		})
-		if err != nil {
-			return nil, err
-		}
+func ListDir(path []string) (openfile.OpenFile, error) {
+	openFile := openfile.NewOpenFile(len(path))
+	if err := openFile.Adds(path); err != nil {
+		return nil, err
 	}
-	return fileList, nil
+	return openFile, nil
 }

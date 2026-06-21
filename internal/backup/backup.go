@@ -16,13 +16,12 @@ func Run(clas *value.Clas) error {
 			return err
 		}
 		fmt.Println("获取文件中")
-		var err error
-		clas.Input, err = file.ListDir(clas.Input)
+		openFile, err := file.ListDir(clas.Input)
 		if err != nil {
 			fmt.Println("获取文件错误:", err)
 			return err
 		}
-		err = file.BackupFile(clas)
+		err = file.BackupFile(clas, openFile)
 		if err != nil {
 			fmt.Println("备份出错:", err)
 			return err

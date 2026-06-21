@@ -8,10 +8,17 @@ import (
 
 	"github.com/hhelibe2006-commits/Amber/internal/backup/file/writer"
 	"github.com/hhelibe2006-commits/Amber/internal/value"
+	"github.com/hhelibe2006-commits/Amber/internal/value/openfile"
 	"github.com/hhelibe2006-commits/Amber/pkg/cdc"
 )
 
-func BackupFile(clas *value.Clas) error {
+func BackupFile(clas *value.Clas, openFile openfile.OpenFile) error {
+	defer func(openFile *openfile.OpenFile) {
+		err := openFile.Close()
+		if err != nil {
+
+		}
+	}(&openFile)
 	tempFiles, err := value.NewTempFiles()
 	if err != nil {
 		return err
@@ -20,36 +27,25 @@ func BackupFile(clas *value.Clas) error {
 	defer tempFiles.Remove()
 	wg := new(sync.WaitGroup)
 	CDC := cdc.NewCDC(clas.Cdc)
-	cDC(tempFiles, wg, clas.Input, CDC)
+	chunkFiles(tempFiles, wg, openFile, CDC)
 	wg.Wait()
 	writer.Compress(clas.Output, tempFiles)
 	return nil
 }
 
-func cDC(tempFiles *value.TempFiles, wg *sync.WaitGroup, input []string, CDC func(file *os.File) cdc.CDC) {
-	fileMa := make(map[string]*value.File, len(input))
-	ma := make(map[[32]byte]*struct {
-		A int64
-		B int64
-	})
-	var mu *sync.Mutex
-	dc := make(chan struct{}, 2)
-	for _, file := range input {
-		var err error
-		if fileMa[file], err = value.NewFile(file); err != nil {
-			return
-		}
+func chunkFiles(tempFiles *value.TempFiles, wg *sync.WaitGroup, input openfile.OpenFile, CDC func(file *os.File) cdc.CDC) {
+	fileMap, err := NewMap(input)
+	if err != nil {
+
 	}
+	sem := make(chan struct{}, 2)
 	for _, file := range input {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			dc <- struct{}{}
-			defer func() { <-dc }()
-			f, err := os.Open(file)
-			if err != nil {
-				return
-			}
+			sem <- struct{}{}
+			defer func() { <-sem }()
+			f := file
 			defer func(f *os.File) {
 				err := f.Close()
 				if err != nil {
@@ -58,34 +54,35 @@ func cDC(tempFiles *value.TempFiles, wg *sync.WaitGroup, input []string, CDC fun
 			}(f)
 			d := CDC(f)
 			for {
-				by, err := d.Next()
-				if err != nil {
-					if err != io.EOF {
-						return
-					}
-					return
-				}
-				hash := sha256.Sum256(by)
-				mu.Lock()
-				fileMa[file].HashList = append(fileMa[file].HashList, hash)
-				if _, ok := ma[hash]; ok {
-					mu.Unlock()
-					continue
-				}
-				err = writerFile(&ma, tempFiles.TempDate, by, &hash)
-				if err != nil {
-					return
-				}
-				mu.Unlock()
+				handleChunk(d, fileMap, file, tempFiles)
 			}
 		}()
 	}
 }
 
-func writerFile(ma *map[[32]byte]*struct {
-	A int64
-	B int64
-}, tempDate *os.File, by []byte, hash *[32]byte) error {
+func handleChunk(d cdc.CDC, fileMap *ChunkIndex, file *os.File, tempFiles *value.TempFiles) {
+	by, err := d.Next()
+	if err != nil {
+		if err != io.EOF {
+			return
+		}
+		return
+	}
+	hash := sha256.Sum256(by)
+	fileMap.Mu.Lock()
+	fileMap.FileMap[file.Name()].HashList = append(fileMap.FileMap[file.Name()].HashList, hash)
+	if _, ok := fileMap.hashToPlace[hash]; ok {
+		fileMap.Mu.Unlock()
+		return
+	}
+	err = writerFile(&fileMap.hashToPlace, tempFiles.TempDate, by, &hash)
+	if err != nil {
+		return
+	}
+	fileMap.Mu.Unlock()
+}
+
+func writerFile(ma *map[[32]byte]*value.FilePlace, tempDate *os.File, by []byte, hash *[32]byte) error {
 	a, err := tempDate.Seek(0, io.SeekCurrent)
 	if err != nil {
 		return err
@@ -98,9 +95,6 @@ func writerFile(ma *map[[32]byte]*struct {
 	if err != nil {
 		return err
 	}
-	(*ma)[*hash] = &struct {
-		A int64
-		B int64
-	}{A: a, B: int64(b)}
+	(*ma)[*hash] = &value.FilePlace{A: a, B: int64(b)}
 	return nil
 }
