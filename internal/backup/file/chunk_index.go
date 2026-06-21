@@ -13,7 +13,7 @@ type ChunkIndex struct {
 	Mu          *sync.Mutex
 }
 
-func NewMap(fileList openfile.OpenFile) (*ChunkIndex, error) {
+func NewChunkIndex(fileList openfile.OpenFile) (*ChunkIndex, error) {
 	fileMap := new(ChunkIndex)
 	fileMap.FileMap = make(map[string]*value.File, len(fileList))
 	for _, file := range fileList {

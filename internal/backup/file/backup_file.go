@@ -2,6 +2,7 @@ package file
 
 import (
 	"crypto/sha256"
+	"errors"
 	"io"
 	"os"
 	"sync"
@@ -14,8 +15,7 @@ import (
 
 func BackupFile(clas *value.Clas, openFile openfile.OpenFile) error {
 	defer func(openFile *openfile.OpenFile) {
-		err := openFile.Close()
-		if err != nil {
+		if err := openFile.Close(); err != nil {
 
 		}
 	}(&openFile)
@@ -24,61 +24,72 @@ func BackupFile(clas *value.Clas, openFile openfile.OpenFile) error {
 		return err
 	}
 	defer tempFiles.Close()
-	wg := new(sync.WaitGroup)
 	CDC := cdc.NewCDC(clas.Cdc)
-	chunkFiles(tempFiles, wg, openFile, CDC)
-	wg.Wait()
+	if err = chunkFiles(tempFiles, openFile, CDC); err != nil {
+		return err
+	}
 	writer.Compress(clas.Output, tempFiles)
 	return nil
 }
 
-func chunkFiles(tempFiles *value.TempFiles, wg *sync.WaitGroup, input openfile.OpenFile, CDC func(file *os.File) cdc.CDC) {
-	fileMap, err := NewMap(input)
+func chunkFiles(tempFiles *value.TempFiles, input openfile.OpenFile, CDC func(file *os.File) cdc.CDC) error {
+	fileMap, err := NewChunkIndex(input)
 	if err != nil {
-
+		return err
 	}
+	wg := new(sync.WaitGroup)
 	sem := make(chan struct{}, 2)
+	errChan := make(chan error)
 	for _, file := range input {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			f := file
 			defer func(f *os.File) {
-				err := f.Close()
-				if err != nil {
-
+				if err = f.Close(); err != nil {
 				}
-			}(f)
-			d := CDC(f)
+			}(file)
+			d := CDC(file)
 			for {
-				handleChunk(d, fileMap, file, tempFiles)
+				if err = handleChunk(d, fileMap, file, tempFiles); err != nil {
+					errChan <- err
+				}
 			}
 		}()
 	}
+	errList := make([]error, 0)
+	for range len(input) {
+		if err = <-errChan; err != nil {
+			errList = append(errList, err)
+		}
+	}
+	wg.Wait()
+	Writer(fileMap, tempFiles)
+	return errors.Join(errList...)
 }
 
-func handleChunk(d cdc.CDC, fileMap *ChunkIndex, file *os.File, tempFiles *value.TempFiles) {
+func handleChunk(d cdc.CDC, fileMap *ChunkIndex, file *os.File, tempFiles *value.TempFiles) error {
 	by, err := d.Next()
 	if err != nil {
 		if err != io.EOF {
-			return
+			return err
 		}
-		return
+		return err
 	}
 	hash := sha256.Sum256(by)
 	fileMap.Mu.Lock()
 	fileMap.FileMap[file.Name()].HashList = append(fileMap.FileMap[file.Name()].HashList, hash)
 	if _, ok := fileMap.hashToPlace[hash]; ok {
 		fileMap.Mu.Unlock()
-		return
+		return nil
 	}
 	err = writerFile(&fileMap.hashToPlace, tempFiles.TempDate, by, &hash)
 	if err != nil {
-		return
+		return err
 	}
 	fileMap.Mu.Unlock()
+	return nil
 }
 
 func writerFile(ma *map[[32]byte]*value.FilePlace, tempDate *os.File, by []byte, hash *[32]byte) error {
