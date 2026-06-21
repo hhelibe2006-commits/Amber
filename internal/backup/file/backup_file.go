@@ -24,7 +24,6 @@ func BackupFile(clas *value.Clas, openFile openfile.OpenFile) error {
 		return err
 	}
 	defer tempFiles.Close()
-	defer tempFiles.Remove()
 	wg := new(sync.WaitGroup)
 	CDC := cdc.NewCDC(clas.Cdc)
 	chunkFiles(tempFiles, wg, openFile, CDC)

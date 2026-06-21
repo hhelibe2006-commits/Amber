@@ -10,7 +10,6 @@ import (
 
 func Compress(output string, tempFiles *value.TempFiles) {
 	fileList := tempFiles.FileList()
-	tempFiles.Close()
 	zipFile, err := os.Create(output)
 	if err != nil {
 		fmt.Println(err)

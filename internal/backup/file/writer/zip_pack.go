@@ -7,17 +7,17 @@ import (
 	"os"
 )
 
-func ZipPack(file string, zipWriter *zip.Writer) {
-	f, err := os.Open(file)
-	if err != nil {
-		fmt.Println(err)
-	}
+func ZipPack(file *os.File, zipWriter *zip.Writer) {
+	f := file
 	defer func(f *os.File) {
 		err := f.Close()
 		if err != nil {
 			fmt.Println(err)
 		}
 	}(f)
+	if _, err := f.Seek(0, io.SeekStart); err != nil {
+		fmt.Println(err)
+	}
 	info, err := f.Stat()
 	if err != nil {
 		fmt.Println(err)

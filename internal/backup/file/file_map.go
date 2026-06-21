@@ -18,7 +18,7 @@ func NewMap(fileList openfile.OpenFile) (*ChunkIndex, error) {
 	fileMap.FileMap = make(map[string]*value.File, len(fileList))
 	for _, file := range fileList {
 		var err error
-		if fileMap.FileMap[file.Name()], err = value.NewFile((file.Name())); err != nil {
+		if fileMap.FileMap[file.Name()], err = value.NewFile(file.Name()); err != nil {
 			return nil, err
 		}
 	}

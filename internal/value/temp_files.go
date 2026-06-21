@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/hhelibe2006-commits/Amber/internal/file"
 )
 
 type TempFiles struct {
@@ -23,25 +25,25 @@ func NewTempFiles() (*TempFiles, error) {
 	}
 
 	infoPath := filepath.Join(tempFiles.tempDir, "info")
-	tempFiles.TempInfo, err = os.Create(infoPath)
+	tempFiles.TempInfo, err = file.CreateFile(infoPath)
 	if err != nil {
 		return nil, err
 	}
 
 	datePath := filepath.Join(tempFiles.tempDir, "date")
-	tempFiles.TempDate, err = os.Create(datePath)
+	tempFiles.TempDate, err = file.CreateFile(datePath)
 	if err != nil {
 		return nil, err
 	}
 
 	hashPath := filepath.Join(tempFiles.tempDir, "hash")
-	tempFiles.TempHash, err = os.Create(hashPath)
+	tempFiles.TempHash, err = file.CreateFile(hashPath)
 	if err != nil {
 		return nil, err
 	}
 
 	filePath := filepath.Join(tempFiles.tempDir, "file")
-	tempFiles.TempFile, err = os.Create(filePath)
+	tempFiles.TempFile, err = file.CreateFile(filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -60,17 +62,17 @@ func (tempFiles *TempFiles) Close() {
 	}
 }
 
-func (tempFiles *TempFiles) Remove() {
-	if err := os.RemoveAll(tempFiles.tempDir); err != nil {
-		fmt.Print("remove", err)
-	}
-}
-
-func (tempFiles *TempFiles) FileList() []string {
-	fileList := make([]string, 0, 4)
-	fileList = append(fileList, tempFiles.TempInfo.Name())
-	fileList = append(fileList, tempFiles.TempFile.Name())
-	fileList = append(fileList, tempFiles.TempDate.Name())
-	fileList = append(fileList, tempFiles.TempHash.Name())
+func (tempFiles *TempFiles) FileList() []*os.File {
+	fileList := make([]*os.File, 0, 4)
+	fileList = append(fileList, tempFiles.TempInfo)
+	fileList = append(fileList, tempFiles.TempFile)
+	fileList = append(fileList, tempFiles.TempDate)
+	fileList = append(fileList, tempFiles.TempHash)
 	return fileList
 }
+
+//func (tempFiles *TempFiles) Remove() {
+//	if err := os.RemoveAll(tempFiles.tempDir); err != nil {
+//		fmt.Print("remove", err)
+//	}
+//}

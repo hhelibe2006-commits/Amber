@@ -3,6 +3,7 @@ package openfile
 import (
 	"errors"
 	"os"
+	"path/filepath"
 
 	"github.com/hhelibe2006-commits/Amber/internal/value"
 )
@@ -15,7 +16,19 @@ func NewOpenFile(n int) OpenFile {
 
 func (o *OpenFile) Adds(paths value.PathList) error {
 	for _, path := range paths {
-		if err := o.Add(path); err != nil {
+		err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if info.IsDir() {
+				return nil
+			}
+			if err = o.Add(path); err != nil {
+				return err
+			}
+			return nil
+		})
+		if err != nil {
 			return err
 		}
 	}
