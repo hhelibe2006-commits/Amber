@@ -1,13 +1,16 @@
 package cdc
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/hhelibe2006-commits/Amber/pkg/cdc/hash"
 )
 
 func init() {
-	Add("rabincdc", NewRabinCDC)
+	if err := Add("rabincdc", NewRabinCDC); err != nil {
+		fmt.Println(err)
+	}
 }
 
 type RabinCDC struct {

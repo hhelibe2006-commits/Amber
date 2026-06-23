@@ -7,7 +7,7 @@ import (
 func ListDir(path []string) (openfile.OpenFile, error) {
 	openFile := openfile.NewOpenFile(len(path))
 	if err := openFile.Adds(path); err != nil {
-		return nil, err
+		return openFile, err
 	}
 	return openFile, nil
 }

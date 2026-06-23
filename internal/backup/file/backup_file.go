@@ -42,6 +42,11 @@ func chunkFiles(tempFiles *value.TempFiles, input openfile.OpenFile, CDC func(fi
 	errChan := make(chan error)
 	for _, file := range input {
 		wg.Add(1)
+		file, err := input.To(file)
+		if err != nil {
+			errChan <- err
+			continue
+		}
 		go func() {
 			defer wg.Done()
 			sem <- struct{}{}

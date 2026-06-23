@@ -17,6 +17,12 @@ func Run(clas *value.Clas) error {
 		}
 		fmt.Println("获取文件中")
 		openFile, err := file.ListDir(clas.Input)
+		defer func() {
+			err := openFile.Close()
+			if err != nil {
+
+			}
+		}()
 		if err != nil {
 			fmt.Println("获取文件错误:", err)
 			return err

@@ -1,14 +1,13 @@
 package openfile
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
 
 	"github.com/hhelibe2006-commits/Amber/internal/value"
 )
 
-type OpenFile []*os.File
+type OpenFile []string
 
 func NewOpenFile(n int) OpenFile {
 	return make(OpenFile, 0, n)
@@ -36,11 +35,18 @@ func (o *OpenFile) Adds(paths value.PathList) error {
 }
 
 func (o *OpenFile) Close() error {
-	errList := make([]error, 0)
-	for _, file := range *o {
-		if err := file.Close(); err != nil {
-			errList = append(errList, err)
-		}
+	return nil
+}
+
+func (o *OpenFile) Add(path string) error {
+	*o = append(*o, path)
+	return nil
+}
+
+func (o *OpenFile) To(path string) (*os.File, error) {
+	file, err := os.OpenFile(path, os.O_RDONLY|os.O_CREATE, 0666)
+	if err != nil {
+		return file, err
 	}
-	return errors.Join(errList...)
+	return file, nil
 }

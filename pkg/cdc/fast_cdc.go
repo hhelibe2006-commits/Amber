@@ -1,13 +1,16 @@
 package cdc
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/hhelibe2006-commits/Amber/pkg/cdc/hash"
 )
 
 func init() {
-	Add("fastcdc", NewFastCdc)
+	if err := Add("fastcdc", NewFastCdc); err != nil {
+		fmt.Println(err)
+	}
 }
 
 type FastCDC struct {
