@@ -7,7 +7,7 @@ import (
 	"github.com/hhelibe2006-commits/Amber/internal/value"
 )
 
-func Run(clas *value.Clas) error {
+func Run(clas *value.BackupClas) error {
 	switch clas.Typ {
 	case "file":
 		fmt.Println("校验路径中")

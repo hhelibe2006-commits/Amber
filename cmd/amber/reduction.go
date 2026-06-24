@@ -4,18 +4,19 @@ import (
 	"fmt"
 
 	"github.com/hhelibe2006-commits/Amber/internal/reduction"
+	"github.com/hhelibe2006-commits/Amber/internal/value"
 	"github.com/spf13/cobra"
 )
 
 func init() {
-	var input string
-
+	clas := value.NewReductionClas()
 	//还原命令
 	var restoreCmd = &cobra.Command{
 		Use:   "restore",
 		Short: "执行还原",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := reduction.Run(input); err != nil {
+			fmt.Println(clas.Input)
+			if err := reduction.Run(clas); err != nil {
 				return err
 			}
 			return nil
@@ -23,9 +24,8 @@ func init() {
 	}
 	rootCmd.AddCommand(restoreCmd)
 
-	restoreCmd.Flags().StringVarP(&input, "input", "i", "", "输入路径")
-	err := restoreCmd.MarkFlagRequired("input")
-	if err != nil {
+	restoreCmd.Flags().StringVarP(&clas.Input, "input", "i", "", "输入路径")
+	if err := restoreCmd.MarkFlagRequired("input"); err != nil {
 		fmt.Println("初始化错误:", err)
 		return
 	}

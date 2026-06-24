@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 )
 
-func ZipPack(file *os.File, zipWriter *zip.Writer) {
+func ZipPack(file *os.File, zipWriter *zip.Writer) error {
 	f := file
 	defer func(f *os.File) {
 		err := f.Close()
@@ -16,23 +17,25 @@ func ZipPack(file *os.File, zipWriter *zip.Writer) {
 		}
 	}(f)
 	if _, err := f.Seek(0, io.SeekStart); err != nil {
-		fmt.Println(err)
+		return err
 	}
 	info, err := f.Stat()
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 	header, err := zip.FileInfoHeader(info)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 	header.Method = zip.Store
+	header.Name = filepath.Base(f.Name())
 	z, err := zipWriter.CreateHeader(header)
 	if err != nil {
-		return
+		return err
 	}
 	_, err = io.Copy(z, f)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
+	return nil
 }

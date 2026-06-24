@@ -2,18 +2,20 @@ package file
 
 import (
 	"crypto/sha256"
+	"encoding/gob"
 	"errors"
 	"io"
 	"os"
 	"sync"
 
 	"github.com/hhelibe2006-commits/Amber/internal/backup/file/writer"
+	"github.com/hhelibe2006-commits/Amber/internal/openfile"
 	"github.com/hhelibe2006-commits/Amber/internal/value"
-	"github.com/hhelibe2006-commits/Amber/internal/value/openfile"
+	"github.com/hhelibe2006-commits/Amber/internal/value/chunkindex"
 	"github.com/hhelibe2006-commits/Amber/pkg/cdc"
 )
 
-func BackupFile(clas *value.Clas, openFile openfile.OpenFile) error {
+func BackupFile(clas *value.BackupClas, openFile openfile.OpenFile) error {
 	defer func(openFile *openfile.OpenFile) {
 		if err := openFile.Close(); err != nil {
 
@@ -28,17 +30,25 @@ func BackupFile(clas *value.Clas, openFile openfile.OpenFile) error {
 	if err = chunkFiles(tempFiles, openFile, CDC); err != nil {
 		return err
 	}
-	writer.Compress(clas.Output, tempFiles)
+	en := gob.NewEncoder(tempFiles.TempInfo)
+	err = en.Encode(clas.Typ)
+	if err != nil {
+		return err
+	}
+	err = writer.Compress(clas.Output, tempFiles)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func chunkFiles(tempFiles *value.TempFiles, input openfile.OpenFile, CDC func(file *os.File) cdc.CDC) error {
-	fileMap, err := NewChunkIndex(input)
+	fileMap, err := chunkindex.NewChunkIndex(input)
 	if err != nil {
 		return err
 	}
 	wg := new(sync.WaitGroup)
-	sem := make(chan struct{}, 2)
+	sem := make(chan struct{}, 1)
 	errChan := make(chan error)
 	for _, file := range input {
 		wg.Add(1)
@@ -78,24 +88,27 @@ func chunkFiles(tempFiles *value.TempFiles, input openfile.OpenFile, CDC func(fi
 	return errors.Join(errList...)
 }
 
-func handleChunk(d cdc.CDC, fileMap *ChunkIndex, file *os.File, tempFiles *value.TempFiles) error {
+func handleChunk(d cdc.CDC, fileMap *chunkindex.ChunkIndex, file *os.File, tempFiles *value.TempFiles) error {
 	by, err := d.Next()
-	if err != nil {
+	var e error
+	if err != nil && err != io.EOF {
 		return err
+	} else if err == io.EOF {
+		e = err
 	}
 	hash := sha256.Sum256(by)
 	fileMap.Mu.Lock()
 	fileMap.FileMap[file.Name()].HashList = append(fileMap.FileMap[file.Name()].HashList, hash)
-	if _, ok := fileMap.hashToPlace[hash]; ok {
+	if _, ok := fileMap.HashToPlace[hash]; ok {
 		fileMap.Mu.Unlock()
 		return nil
 	}
-	err = writerFile(&fileMap.hashToPlace, tempFiles.TempDate, by, &hash)
+	err = writerFile(&fileMap.HashToPlace, tempFiles.TempDate, by, &hash)
+	fileMap.Mu.Unlock()
 	if err != nil {
 		return err
 	}
-	fileMap.Mu.Unlock()
-	return nil
+	return e
 }
 
 func writerFile(ma *map[[32]byte]*value.FilePlace, tempDate *os.File, by []byte, hash *[32]byte) error {

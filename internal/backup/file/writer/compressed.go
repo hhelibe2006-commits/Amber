@@ -8,11 +8,11 @@ import (
 	"github.com/hhelibe2006-commits/Amber/internal/value"
 )
 
-func Compress(output string, tempFiles *value.TempFiles) {
+func Compress(output string, tempFiles *value.TempFiles) error {
 	fileList := tempFiles.FileList()
 	zipFile, err := os.Create(output)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 	defer func(zipFile *os.File) {
 		err := zipFile.Close()
@@ -29,6 +29,10 @@ func Compress(output string, tempFiles *value.TempFiles) {
 		}
 	}(zipWriter)
 	for _, file := range fileList {
-		ZipPack(file, zipWriter)
+		err = ZipPack(file, zipWriter)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }

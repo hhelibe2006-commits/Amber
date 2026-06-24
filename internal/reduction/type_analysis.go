@@ -1,29 +1,44 @@
 package reduction
 
 import (
-	"archive/tar"
+	"archive/zip"
+	"encoding/gob"
 	"errors"
-	"io"
 	"os"
+	"path/filepath"
+
+	"github.com/hhelibe2006-commits/Amber/internal/value"
 )
 
-func TypeAnalysis(inFile *os.File) (string, error) {
-	typeName := "file"
-	reader := tar.NewReader(inFile)
-	for {
-		header, err := reader.Next()
-		if err == io.EOF {
-			return "", errors.New("这对吗？")
-		}
-		if err != nil {
-			return "", err
-		}
-		switch header.Name {
-		case "file":
-			typeName = header.Name
-			return typeName, nil
-		default:
-			break
+func TypeAnalysis(infile *os.File) (string, error) {
+	info, err := infile.Stat()
+	if err != nil {
+		return "", err
+	}
+	zipReader, err := zip.NewReader(infile, info.Size())
+	if err != nil {
+		return "", err
+	}
+	file, err := value.NewTempFiles()
+	if err != nil {
+		return "", err
+	}
+	name := file.TempInfo.Name()
+	name = filepath.Base(name)
+	for _, f := range zipReader.File {
+		if f.Name == name {
+			re, err := f.Open()
+			if err != nil {
+				return "", err
+			}
+			decoder := gob.NewDecoder(re)
+			var red string
+			err = decoder.Decode(&red)
+			if err != nil {
+				return "", err
+			}
+			return red, nil
 		}
 	}
+	return "", errors.New("没找到文件")
 }

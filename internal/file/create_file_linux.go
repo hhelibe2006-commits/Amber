@@ -9,6 +9,9 @@ func CreateFile(path string) (*os.File, error) {
 	if err != nil {
 		return nil, err
 	}
-	os.Remove(path)
+	err = os.Remove(path)
+	if err != nil {
+		return nil, err
+	}
 	return f, nil
 }

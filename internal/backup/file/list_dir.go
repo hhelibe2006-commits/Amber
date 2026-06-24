@@ -1,7 +1,7 @@
 package file
 
 import (
-	"github.com/hhelibe2006-commits/Amber/internal/value/openfile"
+	"github.com/hhelibe2006-commits/Amber/internal/openfile"
 )
 
 func ListDir(path []string) (openfile.OpenFile, error) {

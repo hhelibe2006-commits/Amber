@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/hhelibe2006-commits/Amber/internal/value"
+	"golang.org/x/sys/unix"
 )
 
 type OpenFile []string
@@ -44,9 +45,13 @@ func (o *OpenFile) Add(path string) error {
 }
 
 func (o *OpenFile) To(path string) (*os.File, error) {
-	file, err := os.OpenFile(path, os.O_RDONLY|os.O_CREATE, 0666)
+	file, err := os.OpenFile(path, os.O_RDWR, 0666)
 	if err != nil {
 		return file, err
+	}
+	err = unix.Flock(int(file.Fd()), unix.LOCK_EX)
+	if err != nil {
+		return nil, err
 	}
 	return file, nil
 }

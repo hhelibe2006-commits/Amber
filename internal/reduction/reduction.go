@@ -6,10 +6,11 @@ import (
 	"os"
 
 	"github.com/hhelibe2006-commits/Amber/internal/reduction/file"
+	"github.com/hhelibe2006-commits/Amber/internal/value"
 )
 
-func Run(input string) error {
-	f, err := os.Open(input)
+func Run(clas *value.ReductionClas) error {
+	f, err := os.Open(clas.Input)
 	if err != nil {
 		return err
 	}
@@ -20,7 +21,7 @@ func Run(input string) error {
 		}
 	}(f)
 	if IsDir(f) {
-		return errors.New(fmt.Sprint(input + "不是文件"))
+		return errors.New(fmt.Sprint(clas.Input + "不是文件"))
 	}
 	typ, err := TypeAnalysis(f)
 	if err != nil {
