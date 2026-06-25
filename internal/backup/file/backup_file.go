@@ -6,10 +6,10 @@ import (
 	"errors"
 	"io"
 	"os"
-	"sync"
 
 	"github.com/hhelibe2006-commits/Amber/internal/backup/file/writer"
 	"github.com/hhelibe2006-commits/Amber/internal/openfile"
+	"github.com/hhelibe2006-commits/Amber/internal/thread"
 	"github.com/hhelibe2006-commits/Amber/internal/value"
 	"github.com/hhelibe2006-commits/Amber/internal/value/chunkindex"
 	"github.com/hhelibe2006-commits/Amber/pkg/cdc"
@@ -47,20 +47,18 @@ func chunkFiles(tempFiles *value.TempFiles, input openfile.OpenFile, CDC func(fi
 	if err != nil {
 		return err
 	}
-	wg := new(sync.WaitGroup)
-	sem := make(chan struct{}, 1)
-	errChan := make(chan error)
+	er := thread.NewErrorHanding(3)
 	for _, file := range input {
-		wg.Add(1)
-		file, err := input.To(file)
+		er.Wg.Add(1)
+		file, err = input.To(file)
 		if err != nil {
-			errChan <- err
+			er.ErrChan <- err
 			continue
 		}
 		go func() {
-			defer wg.Done()
-			sem <- struct{}{}
-			defer func() { <-sem }()
+			defer er.Wg.Done()
+			er.Sem <- struct{}{}
+			defer func() { <-er.Sem }()
 			defer func(f *os.File) {
 				if err = f.Close(); err != nil {
 				}
@@ -69,7 +67,7 @@ func chunkFiles(tempFiles *value.TempFiles, input openfile.OpenFile, CDC func(fi
 			for {
 				if err = handleChunk(d, fileMap, file, tempFiles); err != nil {
 					if err != io.EOF {
-						errChan <- err
+						er.ErrChan <- err
 					}
 					return
 				}
@@ -77,15 +75,17 @@ func chunkFiles(tempFiles *value.TempFiles, input openfile.OpenFile, CDC func(fi
 		}()
 	}
 	errList := make([]error, 0)
-	go func() {
-		for err := range errChan {
-			errList = append(errList, err)
-		}
-	}()
-	wg.Wait()
-	close(errChan)
+	go errProcess(&errList, er.ErrChan)
+	er.Wg.Wait()
+	close(er.ErrChan)
 	Writer(fileMap, tempFiles)
 	return errors.Join(errList...)
+}
+
+func errProcess(errList *[]error, errChan chan error) {
+	for err := range errChan {
+		*errList = append(*errList, err)
+	}
 }
 
 func handleChunk(d cdc.CDC, fileMap *chunkindex.ChunkIndex, file *os.File, tempFiles *value.TempFiles) error {
